@@ -10,19 +10,19 @@ ZK privacy pools using [Noir](https://noir-lang.org/).
 │   ├── Prover.toml - "Circuit proof inputs"
 │   ├── Verifier.toml - "Circuit verification inputs"
 │   ├── contract
-│   │   └── cashcash
+│   │   └── zerolink
 │   │       └── plonk_vk.sol - "UltraPlonk Solidity verifier"
 │   ├── proofs
-│   │   └── cashcash.proof - "Generated proof data"
+│   │   └── zerolink.proof - "Generated proof data"
 │   ├── src
 │   │   └── main.nr - "Main Noir circuit"
 │   └── target
-│       └── cashcash.json
+│       └── zerolink.json
 ├── foundry.toml
 ├── src
-│   └── Cash.sol - "Main Solidity contract"
+│   └── Zerolink.sol - "Main Solidity contract"
 └── test
-    └── Cash.t.sol - "Solidity tests"
+    └── Zerolink.t.sol - "Solidity tests"
 ```
 
 ## Installation
