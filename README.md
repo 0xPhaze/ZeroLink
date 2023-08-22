@@ -1,5 +1,7 @@
 # CashCash
 
+ZK privacy pools using [Noir](https://noir-lang.org/).
+
 ## Installation
 
 ### Foundry
