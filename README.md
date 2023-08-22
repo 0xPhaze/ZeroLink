@@ -1,4 +1,4 @@
-# CashCash
+# [ZeroLink](https://github.com/anupsv/ZeroLink-monorepo)
 
 ZK privacy pools using [Noir](https://noir-lang.org/).
 
