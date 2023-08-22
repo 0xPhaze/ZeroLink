@@ -26,7 +26,7 @@ curl -L https://raw.githubusercontent.com/noir-lang/noirup/main/install | bash
 noirup -n
 ```
 
-## Circuits
+## Circuit Compilation
 
 Navigate to the [circuits](circuits) directory.
 
@@ -66,4 +66,26 @@ Successful verification of the proof [cashcash.proof](circuits/proofs/cashcash.p
 
 ```sh
 nargo verify
+```
+
+### Solidity Ultra Plonk Verifier
+
+A proof for the circuit can be verified in Solidity.
+
+```sh
+nargo codegen-verifier
+```
+
+This creates the solidity Ultra Plonk verifier [plonk_vk.sol](circuits/contract/cashcash/plonk_vk.sol) specific to the circuit.
+
+## Smart Contract Verification
+
+Navigate to the project's root directory.
+
+### Test
+
+Run the tests in [Cash.t.sol](test/Cash.t.sol).
+
+```sh
+forge test
 ```
