@@ -1,66 +1,69 @@
-## Foundry
+# CashCash
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+## Installation
 
-Foundry consists of:
+### Foundry
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+Install [foundry](https://book.getfoundry.sh/getting-started/installation).
 
-## Documentation
+```sh
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+```
 
-https://book.getfoundry.sh/
+Install dependencies.
 
-## Usage
+```sh
+forge install
+```
 
-### Build
+### Noir
 
-```shell
-$ forge build
+Install [nargo](https://noir-lang.org/getting_started/nargo_installation).
+
+```sh
+curl -L https://raw.githubusercontent.com/noir-lang/noirup/main/install | bash
+noirup -n
+```
+
+## Circuits
+
+Navigate to the [circuits](circuits) directory.
+
+```sh
+cd circuits
 ```
 
 ### Test
 
-```shell
-$ forge test
+Run the tests in [main.nr](circuits/src/main.nr).
+
+```sh
+nargo test
 ```
 
-### Format
+### Compile
 
-```shell
-$ forge fmt
+Compile the main circuit in [main.nr](circuits/src/main.nr).
+
+```sh
+nargo compile
 ```
 
-### Gas Snapshots
+### Prove
 
-```shell
-$ forge snapshot
+Create a proof with public & private data from [`Prover.toml`](circuits/Prover.toml).
+
+```sh
+nargo prove
 ```
 
-### Anvil
+This creates the proof file [cashcash.proof](circuits/proofs/cashcash.proof).
 
-```shell
-$ anvil
-```
+### Verify
 
-### Deploy
+Successful verification of the proof [cashcash.proof](circuits/proofs/cashcash.proof) and the public input from [`Verifier.toml`](circuits/Verifier.toml) can be tested.
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+```sh
+nargo verify
 ```
