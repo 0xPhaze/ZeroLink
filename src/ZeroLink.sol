@@ -13,25 +13,36 @@ contract ZeroLink is UltraVerifier {
     uint256 constant DEPOSIT_AMOUNT = 1 ether;
 
     uint256 public key;
-    bytes32 public root = MerkleLib.zeros(DEPTH);
+    bytes32[DEPTH + 1] public nodes;
 
     mapping(bytes32 => bool) nullifierUsed;
 
-    function deposit(bytes32 nullifierSecretHash, bytes32[DEPTH] memory nodes) public payable {
+    constructor() {
+        // Initialize inner nodes of empty tree.
+        for (uint256 i; i < DEPTH + 1; ++i) {
+            nodes[i] = MerkleLib.zeros(i);
+        }
+    }
+
+    /// @dev The `root` is stored as the last node.
+    function root() public view returns (bytes32) {
+        return nodes[DEPTH];
+    }
+
+    /// @dev Makes a deposit by committing a leaf node to an
+    ///      append-only merkle tree. Every new leaf appended
+    ///      to the next available position in the merkle tree
+    ///      at `key`.
+    ///      The leaf `nullifierSecretHash` is the hash of the
+    ///      `nullifier` and `secret` private values.
+    function deposit(bytes32 nullifierSecretHash) public payable {
         // Require 1 ether deposit value.
         if (msg.value != 1 ether) revert InvalidDepositAmount();
 
-        // Cache `key`.
-        uint256 key_ = key;
-
-        // Validate supplied `nodes` by recomputing current `root`.
-        if (root != MerkleLib.computeRoot(key_, MerkleLib.zeros(0), nodes)) revert InvalidNodes();
-
+        // Append leaf `nullifierSecretHash` at `key` index of merkle tree.
         // Compute and update root with `nullifierSecretHash` inserted at `key` index.
-        root = MerkleLib.computeRoot(key_, nullifierSecretHash, nodes);
-
         // Increment the merkle tree `key`.
-        key = key_ + 1;
+        nodes = MerkleLib.appendLeaf(key++, nullifierSecretHash, nodes);
     }
 
     function withdraw(bytes calldata proof, bytes32 nullifier) public {
@@ -42,10 +53,10 @@ contract ZeroLink is UltraVerifier {
         nullifierUsed[nullifier] = true;
 
         // The prover verifies the zero knowledge proof, demonstrating
-        //   - Knowledge of pre-image of a leaf: `nullifier` and `secret` hash.
-        //   - The leaf is contained in merkle tree with `root`.
-        //   - The proof is generated for `receiver`.
-        _verifyProof(msg.sender, nullifier, root, proof);
+        // * Knowledge of pre-image of a leaf: `nullifier` and `secret` hash.
+        // * The leaf is contained in merkle tree with `root`.
+        // * The proof is generated for `receiver`.
+        _verifyProof(msg.sender, nullifier, root(), proof);
 
         // Refund caller.
         (bool success,) = msg.sender.call{value: 1 ether}("");

@@ -9,16 +9,14 @@ import {MerkleLib, DEPTH} from "../src/MerkleLib.sol";
 /// @dev Prime field order
 uint256 constant PRIME_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
+/// @notice Exposes helper functions on `ZeroLink`
 contract MockZeroLink is ZeroLink {
-    function setRoot(bytes32 root_) public {
-        root = root_;
-    }
-
     function verifyProof(address receiver, bytes32 nullifier, bytes32 root_, bytes calldata proof) public view {
         _verifyProof(receiver, nullifier, root_, proof);
     }
 }
 
+/// @notice ZeroLink test base contract
 contract ZeroLinkTestBase is Test {
     function Field(uint256 x) internal pure returns (uint256) {
         return x % PRIME_FIELD;
@@ -26,27 +24,6 @@ contract ZeroLinkTestBase is Test {
 
     function Field(bytes32 x) internal pure returns (bytes32) {
         return bytes32(uint256(x) % PRIME_FIELD);
-    }
-}
-
-contract ZeroLinkTest is ZeroLinkTestBase {
-    bytes proof;
-    MockZeroLink zlink;
-
-    address bob = address(0xb0b);
-    address babe = address(0xbabe);
-    bytes32 nullifier = bytes32(uint256(0x222244448888));
-    bytes32 secret = bytes32(uint256(0x1337));
-    bytes32 nullifierSecretHash = MerkleLib.hash(nullifier, secret);
-    bytes32 root = MerkleLib.zeros(DEPTH);
-    bytes32[DEPTH] nodes;
-
-    function setUp() public {
-        proof = vm.parseBytes(vm.readLine("./circuits/proofs/ZeroLink.proof"));
-
-        zlink = new MockZeroLink();
-
-        deal(babe, 100 ether);
     }
 
     function toStringBytes1(bytes1 b) public pure returns (string memory out) {
@@ -63,35 +40,59 @@ contract ZeroLinkTest is ZeroLinkTestBase {
         }
         out = string.concat(out, '"]');
     }
+}
 
-    /// Can successfully verifyProof a valid proof.
+/// @notice ZeroLink tests
+contract ZeroLinkTest is ZeroLinkTestBase {
+    bytes proof;
+    MockZeroLink zerolink;
+
+    address bob = address(0xb0b);
+    address babe = address(0xbabe);
+    bytes32 nullifier = bytes32(uint256(0x222244448888));
+    bytes32 secret = bytes32(uint256(0x1337));
+    bytes32 nullifierSecretHash = MerkleLib.hash(nullifier, secret);
+    bytes32 root = MerkleLib.zeros(DEPTH);
+    bytes32[DEPTH] nodes;
+
+    function setUp() public {
+        proof = vm.parseBytes(vm.readLine("./circuits/proofs/ZeroLink.proof"));
+
+        zerolink = new MockZeroLink();
+
+        deal(babe, 100 ether);
+    }
+
+    /// Can successfully deposit.
     function test_deposit() public {
         // Able to deposit.
         vm.prank(babe);
-        zlink.deposit{value: 1 ether}(nullifierSecretHash, nodes);
+        zerolink.deposit{value: 1 ether}(nullifierSecretHash);
 
         // Read new `root`.
-        root = zlink.root();
+        root = zerolink.root();
 
         // Proof is valid.
-        zlink.verifyProof(babe, nullifier, root, proof);
+        zerolink.verifyProof(babe, nullifier, root, proof);
 
         // Can withdraw funds.
         vm.prank(babe);
-        zlink.withdraw(proof, nullifier);
+        zerolink.withdraw(proof, nullifier);
+
+        assertEq(babe.balance, 100 ether);
     }
 
     /// The same `nullifier` cannot be used twice.
     function test_verify_revert_doubleSpend() public {
         vm.prank(babe);
-        zlink.deposit{value: 1 ether}(nullifierSecretHash, nodes);
+        zerolink.deposit{value: 1 ether}(nullifierSecretHash);
 
         vm.prank(babe);
-        zlink.withdraw(proof, nullifier);
+        zerolink.withdraw(proof, nullifier);
 
         vm.prank(babe);
         vm.expectRevert(ZeroLink.NullifierUsed.selector);
-        zlink.withdraw(proof, nullifier);
+        zerolink.withdraw(proof, nullifier);
     }
 
     /// The call to `verifyProof` cannot be front-run.
@@ -99,7 +100,7 @@ contract ZeroLinkTest is ZeroLinkTestBase {
         vm.assume(sender != babe);
 
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-        zlink.verifyProof(sender, nullifier, root, proof);
+        zerolink.verifyProof(sender, nullifier, root, proof);
     }
 
     /// Cannot modify `nullifier` in proof.
@@ -108,7 +109,7 @@ contract ZeroLinkTest is ZeroLinkTestBase {
         vm.assume(nullifier != nullifier_);
 
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-        zlink.verifyProof(babe, nullifier_, root, proof);
+        zerolink.verifyProof(babe, nullifier_, root, proof);
     }
 
     /// Cannot modify `root` in proof.
@@ -117,7 +118,7 @@ contract ZeroLinkTest is ZeroLinkTestBase {
         vm.assume(root != root_);
 
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-        zlink.verifyProof(babe, nullifier, root_, proof);
+        zerolink.verifyProof(babe, nullifier, root_, proof);
     }
 
     /// Cannot modify `proof`.
@@ -125,7 +126,7 @@ contract ZeroLinkTest is ZeroLinkTestBase {
         vm.assume(keccak256(proof) != keccak256(proof_));
 
         vm.expectRevert();
-        zlink.verifyProof(babe, nullifier, root, proof_);
+        zerolink.verifyProof(babe, nullifier, root, proof_);
     }
 
     /// Cannot modify any proof inputs.
@@ -133,10 +134,10 @@ contract ZeroLinkTest is ZeroLinkTestBase {
         public
     {
         bool invalidProof =
-            (keccak256(proof) != keccak256(proof_) || root != root_ || sender != babe || nullifier != nullifier_);
+            keccak256(proof) != keccak256(proof_) || root != root_ || sender != babe || nullifier != nullifier_;
         vm.assume(invalidProof);
 
         vm.expectRevert();
-        zlink.verifyProof(sender, nullifier_, root_, proof_);
+        zerolink.verifyProof(sender, nullifier_, root_, proof_);
     }
 }
