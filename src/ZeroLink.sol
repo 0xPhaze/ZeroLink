@@ -29,6 +29,9 @@ contract ZeroLink is UltraVerifier {
 
         // Compute and update root with `nullifierSecretHash` inserted at `key` index.
         root = MerkleLib.computeRoot(key_, nullifierSecretHash, nodes);
+
+        // Increment the merkle tree `key`.
+        key = key_ + 1;
     }
 
     function withdraw(bytes calldata proof, bytes32 nullifier) public {
