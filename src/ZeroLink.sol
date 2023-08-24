@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {UltraVerifier} from "../circuits/contract/cashcash/plonk_vk.sol";
+import {UltraVerifier} from "../circuits/contract/ZeroLink/plonk_vk.sol";
 import {MerkleLib, DEPTH} from "./MerkleLib.sol";
 
-contract Cash is UltraVerifier {
+contract ZeroLink is UltraVerifier {
     error InvalidNodes();
     error NullifierUsed();
     error RefundFailed();

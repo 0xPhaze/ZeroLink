@@ -1,5 +1,5 @@
 [package]
-name = "cashcash"
+name = "ZeroLink"
 type = "bin"
 authors = [""]
 compiler_version = "0.10.3"

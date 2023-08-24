@@ -2,14 +2,14 @@
 pragma solidity ^0.8.13;
 
 import {Test, console2 as console} from "forge-std/Test.sol";
-import {BaseUltraVerifier} from "../circuits/contract/cashcash/plonk_vk.sol";
-import {Cash} from "../src/Cash.sol";
+import {BaseUltraVerifier} from "../circuits/contract/ZeroLink/plonk_vk.sol";
+import {ZeroLink} from "../src/ZeroLink.sol";
 import {MerkleLib, DEPTH} from "../src/MerkleLib.sol";
 
 /// @dev Prime field order
 uint256 constant PRIME_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
 
-contract MockCash is Cash {
+contract MockZeroLink is ZeroLink {
     function setRoot(bytes32 root_) public {
         root = root_;
     }
@@ -19,7 +19,7 @@ contract MockCash is Cash {
     }
 }
 
-contract CashTestBase is Test {
+contract ZeroLinkTestBase is Test {
     function Field(uint256 x) internal pure returns (uint256) {
         return x % PRIME_FIELD;
     }
@@ -29,9 +29,9 @@ contract CashTestBase is Test {
     }
 }
 
-contract CounterTest is CashTestBase {
+contract ZeroLinkTest is ZeroLinkTestBase {
     bytes proof;
-    MockCash cash;
+    MockZeroLink zlink;
 
     address bob = address(0xb0b);
     address babe = address(0xbabe);
@@ -42,9 +42,9 @@ contract CounterTest is CashTestBase {
     bytes32[DEPTH] nodes;
 
     function setUp() public {
-        proof = vm.parseBytes(vm.readLine("./circuits/proofs/cashcash.proof"));
+        proof = vm.parseBytes(vm.readLine("./circuits/proofs/ZeroLink.proof"));
 
-        cash = new MockCash();
+        zlink = new MockZeroLink();
 
         deal(babe, 100 ether);
     }
@@ -68,30 +68,30 @@ contract CounterTest is CashTestBase {
     function test_deposit() public {
         // Able to deposit.
         vm.prank(babe);
-        cash.deposit{value: 1 ether}(nullifierSecretHash, nodes);
+        zlink.deposit{value: 1 ether}(nullifierSecretHash, nodes);
 
         // Read new `root`.
-        root = cash.root();
+        root = zlink.root();
 
         // Proof is valid.
-        cash.verifyProof(babe, nullifier, root, proof);
+        zlink.verifyProof(babe, nullifier, root, proof);
 
         // Can withdraw funds.
         vm.prank(babe);
-        cash.withdraw(proof, nullifier);
+        zlink.withdraw(proof, nullifier);
     }
 
     /// The same `nullifier` cannot be used twice.
     function test_verify_revert_doubleSpend() public {
         vm.prank(babe);
-        cash.deposit{value: 1 ether}(nullifierSecretHash, nodes);
+        zlink.deposit{value: 1 ether}(nullifierSecretHash, nodes);
 
         vm.prank(babe);
-        cash.withdraw(proof, nullifier);
+        zlink.withdraw(proof, nullifier);
 
         vm.prank(babe);
-        vm.expectRevert(Cash.NullifierUsed.selector);
-        cash.withdraw(proof, nullifier);
+        vm.expectRevert(ZeroLink.NullifierUsed.selector);
+        zlink.withdraw(proof, nullifier);
     }
 
     /// The call to `verifyProof` cannot be front-run.
@@ -99,7 +99,7 @@ contract CounterTest is CashTestBase {
         vm.assume(sender != babe);
 
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-        cash.verifyProof(sender, nullifier, root, proof);
+        zlink.verifyProof(sender, nullifier, root, proof);
     }
 
     /// Cannot modify `nullifier` in proof.
@@ -108,7 +108,7 @@ contract CounterTest is CashTestBase {
         vm.assume(nullifier != nullifier_);
 
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-        cash.verifyProof(babe, nullifier_, root, proof);
+        zlink.verifyProof(babe, nullifier_, root, proof);
     }
 
     /// Cannot modify `root` in proof.
@@ -117,7 +117,7 @@ contract CounterTest is CashTestBase {
         vm.assume(root != root_);
 
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-        cash.verifyProof(babe, nullifier, root_, proof);
+        zlink.verifyProof(babe, nullifier, root_, proof);
     }
 
     /// Cannot modify `proof`.
@@ -125,7 +125,7 @@ contract CounterTest is CashTestBase {
         vm.assume(keccak256(proof) != keccak256(proof_));
 
         vm.expectRevert();
-        cash.verifyProof(babe, nullifier, root, proof_);
+        zlink.verifyProof(babe, nullifier, root, proof_);
     }
 
     /// Cannot modify any proof inputs.
@@ -137,6 +137,6 @@ contract CounterTest is CashTestBase {
         vm.assume(invalidProof);
 
         vm.expectRevert();
-        cash.verifyProof(sender, nullifier_, root_, proof_);
+        zlink.verifyProof(sender, nullifier_, root_, proof_);
     }
 }
