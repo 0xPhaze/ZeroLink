@@ -5,28 +5,31 @@ import {UltraVerifier} from "../circuits/contract/ZeroLink/plonk_vk.sol";
 import {MerkleLib, DEPTH} from "./MerkleLib.sol";
 
 contract ZeroLink is UltraVerifier {
-    error InvalidNodes();
+    error InvalidRoot();
     error NullifierUsed();
-    error RefundFailed();
+    error TransferFailed();
     error InvalidDepositAmount();
+    error LeafAlreadyCommitted();
 
+    uint256 constant NUM_ROOTS = 10;
     uint256 constant DEPOSIT_AMOUNT = 1 ether;
 
     uint256 public key;
-    bytes32[DEPTH + 1] public nodes;
+    bytes32 public root;
+    bytes32[DEPTH] public nodes;
+
+    uint256 public rootsIndex;
+    bytes32[NUM_ROOTS] public roots;
 
     mapping(bytes32 => bool) nullifierUsed;
+    mapping(bytes32 => bool) committedLeafs;
 
     constructor() {
         // Initialize inner nodes of empty tree.
-        for (uint256 i; i < DEPTH + 1; ++i) {
+        for (uint256 i; i < DEPTH; ++i) {
             nodes[i] = MerkleLib.zeros(i);
         }
-    }
-
-    /// @dev The `root` is stored as the last node.
-    function root() public view returns (bytes32) {
-        return nodes[DEPTH];
+        root = MerkleLib.zeros(DEPTH);
     }
 
     /// @dev Makes a deposit by committing a leaf node to an
@@ -38,29 +41,56 @@ contract ZeroLink is UltraVerifier {
     function deposit(bytes32 nullifierSecretHash) public payable {
         // Require 1 ether deposit value.
         if (msg.value != 1 ether) revert InvalidDepositAmount();
+        // Prevent committing an already existing leaf as
+        // the `nullifier` cannot be spent twice.
+        if (committedLeafs[nullifierSecretHash]) revert LeafAlreadyCommitted();
 
-        // Append leaf `nullifierSecretHash` at `key` index of merkle tree.
-        // Compute and update root with `nullifierSecretHash` inserted at `key` index.
-        // Increment the merkle tree `key`.
-        nodes = MerkleLib.appendLeaf(key++, nullifierSecretHash, nodes);
+        // Mark the leaf as committed.
+        committedLeafs[nullifierSecretHash] = true;
+
+        // Store old `root` in `roots` array and increase `rootsIndex`.
+        roots[rootsIndex++ % NUM_ROOTS] = root;
+
+        // Append leaf `nullifierSecretHash` at index `key` of merkle tree.
+        // Update merkle root and internal nodes inserting `nullifierSecretHash` at index `key`.
+        // Increment the merkle tree index `key`.
+        (root, nodes) = MerkleLib.appendLeaf(key++, nullifierSecretHash, nodes);
     }
 
-    function withdraw(bytes calldata proof, bytes32 nullifier) public {
+    function withdraw(bytes32 nullifier, bytes32 root_, bytes calldata proof) public {
         // Check `nullifier` to prevent replay.
         if (nullifierUsed[nullifier]) revert NullifierUsed();
 
         // Mark `nullifier` as used.
         nullifierUsed[nullifier] = true;
 
+        // Withdrawer's proof must relate to a a previously committed root.
+        if (!_isValidRoot(root_)) revert InvalidRoot();
+
         // The prover verifies the zero knowledge proof, demonstrating
         // * Knowledge of pre-image of a leaf: `nullifier` and `secret` hash.
-        // * The leaf is contained in merkle tree with `root`.
-        // * The proof is generated for `receiver`.
-        _verifyProof(msg.sender, nullifier, root(), proof);
+        // * The leaf is contained in a merkle tree with root `root`.
+        // * The proof is generated for `msg.sender`.
+        _verifyProof(msg.sender, nullifier, root_, proof);
 
         // Refund caller.
         (bool success,) = msg.sender.call{value: 1 ether}("");
-        if (!success) revert RefundFailed();
+        if (!success) revert TransferFailed();
+    }
+
+    function _isValidRoot(bytes32 root_) internal view returns (bool) {
+        if (root_ == root) return true;
+
+        uint256 endIndex = rootsIndex;
+        uint256 index = endIndex;
+        do {
+            // Cycle back `index`.
+            index = (index - 1) % NUM_ROOTS;
+            // Return `true` if a valid previously committed root was found.
+            if (roots[index] == root) return true;
+        } while (index != endIndex);
+
+        return false;
     }
 
     function _verifyProof(address receiver, bytes32 nullifier, bytes32 root_, bytes calldata proof) internal view {
