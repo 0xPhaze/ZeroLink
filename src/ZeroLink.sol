@@ -82,7 +82,7 @@ contract ZeroLink is UltraVerifier {
         if (root_ == root) return true;
 
         uint256 endIndex = rootsIndex;
-        uint256 index = endIndex;
+        uint256 index = endIndex + NUM_ROOTS;
         do {
             // Cycle back `index`.
             index = (index - 1) % NUM_ROOTS;

@@ -36,25 +36,24 @@ library MerkleLib {
         }
     }
 
-    function appendLeaf(uint256 key, bytes32 leaf, bytes32[DEPTH + 1] memory nodes)
+    function appendLeaf(uint256 key, bytes32 leaf, bytes32[DEPTH] memory nodes)
         internal
         pure
-        returns (bytes32[DEPTH + 1] memory newNodes)
+        returns (bytes32 root, bytes32[DEPTH] memory newNodes)
     {
         // Start with the `leaf` node.
         bytes32 node = leaf;
 
         for (uint256 i; i < DEPTH; ++i) {
-            // Update nodes in tree.
-            newNodes[i] = node;
-            // Either hash current node with right zero subtree `zeros(i)`
-            // of depth `i` or with left provided node `nodes[i]`.
-            node = ((key >> i) & 1 == 0) // Read `key`s i-th least-significant bit.
+            // Compute new internal nodes in tree. Either hash
+            // current node with right zero subtree `zeros(i)` of depth `i`
+            // or with left provided node `nodes[i]`.
+            newNodes[i] = node = ((key >> i) & 1 == 0) // Read `key`s i-th least-significant bit.
                 ? hash(node, zeros(i))
                 : hash(nodes[i], node);
         }
 
-        newNodes[DEPTH] = node;
+        root = node;
     }
 
     /// @notice Returns pre-computed zero sub-trees of depth `level`.
