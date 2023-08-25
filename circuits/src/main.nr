@@ -1,9 +1,10 @@
 use dep::std;
 
 global DEPTH: Field = 4;
+global BLOCKED_LEAF: [u8; 32] = [0x2e, 0x1d, 0x42, 0x8a, 0x1a, 0x10, 0x2b, 0x15, 0x2a, 0xd9, 0x10, 0x4d, 0xd6, 0x79, 0x81, 0x7e, 0xcb, 0xf0, 0x20, 0x6a, 0x84, 0x27, 0xc4, 0x0d, 0xc7, 0x21, 0x0e, 0x59, 0xc3, 0xee, 0x3f, 0xfc];
 
 /// Compute the merkle tree root.
-fn compute_merkle_root(key: [u1; 256], leaf: [u8; 32], nodes: [u8; 32 * DEPTH]) -> [u8; 32] {
+fn compute_merkle_root(key: [u1; 128], leaf: [u8; 32], nodes: [u8; 32 * DEPTH]) -> [u8; 32] {
   // Start with the `leaf` node.
   let mut root: [u8; 32] = leaf;
 
@@ -19,10 +20,10 @@ fn compute_merkle_root(key: [u1; 256], leaf: [u8; 32], nodes: [u8; 32 * DEPTH]) 
 
     // Or hash it with right zero subtree `zeros(i)`,
     // depending on `key`s i-th least-significant bit.
-    if (key[255 - i] == 0) {
+    if (key[127 - i] == 0) {
       left = root;
       right = z;
-    } 
+    }
 
     root = hash(left, right);
   }
@@ -92,17 +93,29 @@ fn zeros(level: Field) -> [u8; 32] {
 /// Main circuit.
 fn main(
   receiver: pub Field,
-  key: [u1; 256],
+  key: [u1; 128],
   nullifier: pub [u8; 32],
   secret: [u8; 32],
   nodes: [u8; 32 * DEPTH],
   root: pub [u8; 32],
+  // subsetRoot: pub [u8; 32],
+  // subsetProof: pub [u8; 32 * DEPTH],
+  excludeKey: pub [u1; 128],  // index of the leaf to exclude
 ) {
   // Compute `leaf` using `nullifier` and `secret`.
   let leaf: [u8; 32] = hash(nullifier, secret);
 
   // Ensure `leaf` is included in the merkle tree.
   assert(compute_merkle_root(key, leaf, nodes) == root);
+
+  if (excludeKey != [0; 128]) {
+    assert(excludeKey != key);
+  }
+  // std::println("compute second merkle root");
+  // std::println(compute_merkle_root(excludeKey, BLOCKED_LEAF, subsetProof));
+  // assert(compute_merkle_root(excludeKey, BLOCKED_LEAF, subsetProof) == subsetRoot);
+
+  //assert(key_not_in_path(key, path));
 
   // Tie `receiver` into proof.
   // TODO: Is this safe enough?
@@ -133,7 +146,7 @@ fn helper_get_zero_nodes() -> [u8; 32 * DEPTH] {
 fn test_compute_merkle_root() {
   // This should produce the same root
   // for any `key` value on an empty tree.
-  let key       = [0; 256];
+  let key       = [0; 128];
   let nodes     = helper_get_zero_nodes();
   let leaf      = zeros(0);
   let root      = zeros(DEPTH);
@@ -143,15 +156,46 @@ fn test_compute_merkle_root() {
 
 }
 
+/*
+└─ b22fdee9bf8ee21693da8c5e8cd7259164284f36d2424807915076bcf0f768ec
+   ├─ 1ce11674ee6453bee3bd80f9ff3e4181159cbc15381ba7dee88de727ae995c78
+   │  ├─ 2aa50fdd705311d93da67f63915ae19d8657fb6f5a71915e02789b15906515bf
+   │  │  ├─ b6c1b98a2435907b9fcf3c4cbcd8391d5dc6a25ff6ebb08b8fd879077c1978cb
+   │  │  │  ├─ ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5
+   │  │  │  └─ 2e1d428a1a102b152ad9104dd679817ecbf0206a8427c40dc7210e59c3ee3ffc
+   │  │  └─ b4c11951957c6f8f642c4af61cd6b24640fec6dc7fc607ee8206a99e92410d30
+   │  │     └─ ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5
+   │  └─ 21ddb9a356815c3fac1026b6dec5df3124afbadb485c9ba5a3e3398a04b7ba85
+   │     └─ b4c11951957c6f8f642c4af61cd6b24640fec6dc7fc607ee8206a99e92410d30
+   │        └─ ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5
+   └─ e58769b32a1beaf1ea27375a44095a0d1fb664ce2dd358e7fcbfb78c26a19344
+      └─ 21ddb9a356815c3fac1026b6dec5df3124afbadb485c9ba5a3e3398a04b7ba85
+         └─ b4c11951957c6f8f642c4af61cd6b24640fec6dc7fc607ee8206a99e92410d30
+            └─ ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5
+
+New root: b22fdee9bf8ee21693da8c5e8cd7259164284f36d2424807915076bcf0f768ec
+*/
+
 #[test]
 fn test_main() {
   let receiver  = 0xbabe;
-  let key       = [0; 256];
+  let key       = [0; 128];
   let nullifier = [0x00 as u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x22, 0x22, 0x44, 0x44, 0x88, 0x88];
   let secret    = [0x00 as u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x13, 0x37];
   let leaf      = hash(nullifier, secret);
   let nodes     = helper_get_zero_nodes();
   let root      = compute_merkle_root(key, leaf, nodes);
+  // let subsetRoot: [u8; 32] = [0xb2, 0x2f, 0xde, 0xe9, 0xbf, 0x8e, 0xe2, 0x16, 0x93, 0xda, 0x8c, 0x5e, 0x8c, 0xd7, 0x25, 0x91, 0x64, 0x28, 0x4f, 0x36, 0xd2, 0x42, 0x48, 0x07, 0x91, 0x50, 0x76, 0xbc, 0xf0, 0xf7, 0x68, 0xec];
+  // let subsetProof: [u8; 32*DEPTH] = [
+  //   0xad, 0x32, 0x28, 0xb6, 0x76, 0xf7, 0xd3, 0xcd, 0x42, 0x84, 0xa5, 0x44, 0x3f, 0x17, 0xf1, 0x96, 0x2b, 0x36, 0xe4, 0x91, 0xb3, 0x0a, 0x40, 0xb2, 0x40, 0x58, 0x49, 0xe5, 0x97, 0xba, 0x5f, 0xb5,
+  //   0xb4, 0xc1, 0x19, 0x51, 0x95, 0x7c, 0x6f, 0x8f, 0x64, 0x2c, 0x4a, 0xf6, 0x1c, 0xd6, 0xb2, 0x46, 0x40, 0xfe, 0xc6, 0xdc, 0x7f, 0xc6, 0x07, 0xee, 0x82, 0x06, 0xa9, 0x9e, 0x92, 0x41, 0x0d, 0x30,
+  //   0x21, 0xdd, 0xb9, 0xa3, 0x56, 0x81, 0x5c, 0x3f, 0xac, 0x10, 0x26, 0xb6, 0xde, 0xc5, 0xdf, 0x31, 0x24, 0xaf, 0xba, 0xdb, 0x48, 0x5c, 0x9b, 0xa5, 0xa3, 0xe3, 0x39, 0x8a, 0x04, 0xb7, 0xba, 0x85,
+  //   0xe5, 0x87, 0x69, 0xb3, 0x2a, 0x1b, 0xea, 0xf1, 0xea, 0x27, 0x37, 0x5a, 0x44, 0x09, 0x5a, 0x0d, 0x1f, 0xb6, 0x64, 0xce, 0x2d, 0xd3, 0x58, 0xe7, 0xfc, 0xbf, 0xb7, 0x8c, 0x26, 0xa1, 0x93, 0x44
+  // ];
+  let mut excludeKey = [0; 128];
+  excludeKey[0] = 1;
+
+
 
   std::println("receiver =");
   std::println(receiver);
@@ -168,7 +212,7 @@ fn test_main() {
   std::println("root =");
   std::println(root);
 
-  main(receiver, key, nullifier, secret, nodes, root);
+  main(receiver, key, nullifier, secret, nodes, root, excludeKey);
 }
 
 #[test]

@@ -52,6 +52,10 @@ contract ZeroLink is UltraVerifier {
         if (!success) revert RefundFailed();
     }
 
+    function checkSubsetExclusion(bytes calldata proof, bytes32 nullifier) external view {
+        _verifyProof(msg.sender, nullifier, root, proof);
+    }
+
     function _verifyProof(address receiver, bytes32 nullifier, bytes32 root_, bytes calldata proof) internal view {
         // Set up public inputs for `proof` verification.
         bytes32[] memory publicInputs = new bytes32[](65);
