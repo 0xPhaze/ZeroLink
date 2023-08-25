@@ -45,10 +45,11 @@ library MerkleLib {
         bytes32 node = leaf;
 
         for (uint256 i; i < DEPTH; ++i) {
+            newNodes[i] = node;
             // Compute new internal nodes in tree. Either hash
             // current node with right zero subtree `zeros(i)` of depth `i`
             // or with left provided node `nodes[i]`.
-            newNodes[i] = node = ((key >> i) & 1 == 0) // Read `key`s i-th least-significant bit.
+            node = ((key >> i) & 1 == 0) // Read `key`s i-th least-significant bit.
                 ? hash(node, zeros(i))
                 : hash(nodes[i], node);
         }
