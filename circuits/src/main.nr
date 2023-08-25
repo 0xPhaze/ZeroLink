@@ -3,7 +3,7 @@ use dep::std;
 global DEPTH: Field = 4;
 
 /// Compute the merkle tree root.
-fn compute_merkle_root(key: [u1; 256], leaf: [u8; 32], nodes: [u8; 32 * DEPTH]) -> [u8; 32] {
+fn compute_merkle_root(key: [u1; DEPTH], leaf: [u8; 32], nodes: [u8; 32 * DEPTH]) -> [u8; 32] {
   // Start with the `leaf` node.
   let mut root: [u8; 32] = leaf;
 
@@ -19,7 +19,7 @@ fn compute_merkle_root(key: [u1; 256], leaf: [u8; 32], nodes: [u8; 32 * DEPTH]) 
 
     // Or hash it with right zero subtree `zeros(i)`,
     // depending on `key`s i-th least-significant bit.
-    if (key[255 - i] == 0) {
+    if (key[DEPTH - 1 - i] == 0) {
       left = root;
       right = z;
     } 
@@ -92,7 +92,7 @@ fn zeros(level: Field) -> [u8; 32] {
 /// Main circuit.
 fn main(
   receiver: pub Field,
-  key: [u1; 256],
+  key: [u1; DEPTH],
   nullifier: pub [u8; 32],
   secret: [u8; 32],
   nodes: [u8; 32 * DEPTH],
@@ -133,7 +133,7 @@ fn helper_get_zero_nodes() -> [u8; 32 * DEPTH] {
 fn test_compute_merkle_root() {
   // This should produce the same root
   // for any `key` value on an empty tree.
-  let key       = [0; 256];
+  let key       = [0; DEPTH];
   let nodes     = helper_get_zero_nodes();
   let leaf      = zeros(0);
   let root      = zeros(DEPTH);
@@ -146,7 +146,7 @@ fn test_compute_merkle_root() {
 #[test]
 fn test_main() {
   let receiver  = 0xbabe;
-  let key       = [0; 256];
+  let key       = [0; DEPTH];
   let nullifier = [0x00 as u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x22, 0x22, 0x44, 0x44, 0x88, 0x88];
   let secret    = [0x00 as u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x13, 0x37];
   let leaf      = hash(nullifier, secret);
