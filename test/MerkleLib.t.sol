@@ -4,9 +4,6 @@ pragma solidity ^0.8.20;
 import {Test, console2 as console} from "forge-std/Test.sol";
 import {MerkleLib, DEPTH} from "../src/MerkleLib.sol";
 
-/// @dev Prime field order
-uint256 constant PRIME_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
-
 contract MerkleLibTest is Test {
     function toStringBytes1(bytes1 b) public pure returns (string memory out) {
         out = vm.toString(b);
