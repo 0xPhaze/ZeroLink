@@ -19,7 +19,7 @@ contract MockZeroLink is ZeroLink {
 /// @notice ZeroLink tests
 contract ZeroLinkTest is NoirTestBase {
     address bob = address(0xb0b);
-    address babe = address(0xbabe);
+    address alice = address(0xa11ce);
 
     bytes32 nullifier = bytes32(uint256(0x222244448888));
     bytes32 secret = bytes32(uint256(0x1337));
@@ -34,31 +34,32 @@ contract ZeroLinkTest is NoirTestBase {
         proof = getProofBytes();
 
         deal(bob, 100 ether);
-        deal(babe, 100 ether);
+        deal(alice, 100 ether);
     }
 
     // /// Can successfully generate proofs.
     // function test_generate() public {
     //     uint256 key;
 
-    //     generateProof(babe, key, nullifier, secret, nodes);
+    //     // generateProof(alice, key, nullifier, secret, nodes, ".123.toml");
+    //     generateProof(alice, key, nullifier, secret, nodes, PROVER_FILE);
     // }
 
     /// Can successfully deposit.
     function test_deposit() public {
-        vm.prank(babe);
+        vm.prank(alice);
         zerolink.deposit{value: 1 ether}(hex"1234");
 
         vm.prank(bob);
         zerolink.deposit{value: 1 ether}(hex"4567");
 
-        vm.prank(babe);
+        vm.prank(alice);
         zerolink.deposit{value: 1 ether}(hex"7890");
     }
 
     /// Can successfully deposit.
     function test_deposit_revert_LeafAlreadyCommitted() public {
-        vm.prank(babe);
+        vm.prank(alice);
         zerolink.deposit{value: 1 ether}(nullifierSecretHash);
 
         vm.prank(bob);
@@ -69,21 +70,21 @@ contract ZeroLinkTest is NoirTestBase {
     /// Can successfully withdraw.
     function test_withdraw() public {
         // Able to deposit.
-        vm.prank(babe);
+        vm.prank(alice);
         zerolink.deposit{value: 1 ether}(nullifierSecretHash);
 
         // Read new `root`.
         root = zerolink.root();
 
         // Proof is valid.
-        zerolink.verifyProof(babe, nullifier, root, proof);
+        zerolink.verifyProof(alice, nullifier, root, proof);
 
         // Can withdraw funds.
-        vm.prank(babe);
+        vm.prank(alice);
         zerolink.withdraw(nullifier, root, proof);
 
         // Receiver gets funds back.
-        assertEq(babe.balance, 100 ether);
+        assertEq(alice.balance, 100 ether);
     }
 
     /// Can't withdraw with a valid proof but invalid root.
@@ -91,30 +92,30 @@ contract ZeroLinkTest is NoirTestBase {
         // `root` corresponds to valid proof, but it was never committed.
         root = 0x88003085d942aed66badd8d8a2e3d928aa7d1866d0d44b28e660a16579bf3881;
 
-        vm.prank(babe);
+        vm.prank(alice);
         vm.expectRevert(ZeroLink.InvalidRoot.selector);
         zerolink.withdraw(nullifier, root, proof);
     }
 
     /// The same `nullifier` cannot be used twice.
     function test_verify_revert_NullifierUsed() public {
-        vm.prank(babe);
+        vm.prank(alice);
         zerolink.deposit{value: 1 ether}(nullifierSecretHash);
 
         // Read new `root`.
         root = zerolink.root();
 
-        vm.prank(babe);
+        vm.prank(alice);
         zerolink.withdraw(nullifier, root, proof);
 
-        vm.prank(babe);
+        vm.prank(alice);
         vm.expectRevert(ZeroLink.NullifierUsed.selector);
         zerolink.withdraw(nullifier, root, proof);
     }
 
     /// The call to `verifyProof` cannot be front-run.
     function test_verify_revert_PROOF_FAILURE_invalidSender(address sender) public {
-        vm.assume(sender != babe);
+        vm.assume(sender != alice);
 
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
         zerolink.verifyProof(sender, nullifier, root, proof);
@@ -126,7 +127,7 @@ contract ZeroLinkTest is NoirTestBase {
         vm.assume(nullifier != nullifier_);
 
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-        zerolink.verifyProof(babe, nullifier_, root, proof);
+        zerolink.verifyProof(alice, nullifier_, root, proof);
     }
 
     /// Cannot modify `root` in proof.
@@ -135,7 +136,7 @@ contract ZeroLinkTest is NoirTestBase {
         vm.assume(root != root_);
 
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-        zerolink.verifyProof(babe, nullifier, root_, proof);
+        zerolink.verifyProof(alice, nullifier, root_, proof);
     }
 
     /// Cannot modify `proof`.
@@ -143,7 +144,7 @@ contract ZeroLinkTest is NoirTestBase {
         vm.assume(keccak256(proof) != keccak256(proof_));
 
         vm.expectRevert();
-        zerolink.verifyProof(babe, nullifier, root, proof_);
+        zerolink.verifyProof(alice, nullifier, root, proof_);
     }
 
     /// Cannot modify any proof inputs.
@@ -152,7 +153,7 @@ contract ZeroLinkTest is NoirTestBase {
     {
         bool validProof;
         validProof = validProof && root == root_;
-        validProof = validProof && sender == babe;
+        validProof = validProof && sender == alice;
         validProof = validProof && nullifier == nullifier_;
         validProof = validProof && keccak256(proof) == keccak256(proof_);
         vm.assume(!validProof);
