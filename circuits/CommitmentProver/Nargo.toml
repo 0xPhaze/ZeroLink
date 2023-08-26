@@ -1,5 +1,5 @@
 [package]
-name = "ZeroLink"
+name = "CommitmentProver"
 type = "bin"
 authors = [""]
 compiler_version = "0.10.3"
