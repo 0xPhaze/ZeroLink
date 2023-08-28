@@ -8,21 +8,18 @@ fn compute_merkle_root(key: [u1; DEPTH], leaf: [u8; 32], nodes: [u8; 32 * DEPTH]
   let mut root: [u8; 32] = leaf;
 
   for i in 0..DEPTH {
-    // std::println(root);
-
     let n = get_node(nodes, i);
-    let z = zeros(i);
 
     // Hash current node `root` with left provided node `nodes[i]`
     let mut left = n;
     let mut right = root;
 
-    // Or hash it with right zero subtree `zeros(i)`,
+    // Or hash it with right `nodes[i]` to the right
     // depending on `key`s i-th bit.
     if (key[i] == 0) {
       left = root;
-      right = z;
-    } 
+      right = n;
+    }
 
     root = hash(left, right);
   }
