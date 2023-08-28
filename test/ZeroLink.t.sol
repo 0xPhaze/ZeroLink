@@ -115,154 +115,154 @@ contract ZeroLinkTest is NoirTestBase {
         zerolink.withdraw(nullifier, root, proof);
     }
 
-    // /* ------------- deposit ------------- */
+    /* ------------- deposit ------------- */
 
-    // /// Can successfully deposit.
-    // function test_deposit() public {
-    //     vm.prank(alice);
-    //     zerolink.deposit{value: 1 ether}(hex"1234");
+    /// Can successfully deposit.
+    function test_deposit() public {
+        vm.prank(alice);
+        zerolink.deposit{value: 1 ether}(hex"1234");
 
-    //     vm.prank(bob);
-    //     zerolink.deposit{value: 1 ether}(hex"4567");
+        vm.prank(bob);
+        zerolink.deposit{value: 1 ether}(hex"4567");
 
-    //     vm.prank(alice);
-    //     zerolink.deposit{value: 1 ether}(hex"7890");
-    // }
+        vm.prank(alice);
+        zerolink.deposit{value: 1 ether}(hex"7890");
+    }
 
-    // /// Deposit failure.
-    // function test_deposit_revert_LeafAlreadyCommitted() public {
-    //     vm.prank(alice);
-    //     zerolink.deposit{value: 1 ether}(nullifierSecretHash);
+    /// Deposit failure.
+    function test_deposit_revert_LeafAlreadyCommitted() public {
+        vm.prank(alice);
+        zerolink.deposit{value: 1 ether}(nullifierSecretHash);
 
-    //     vm.prank(bob);
-    //     vm.expectRevert(ZeroLink.LeafAlreadyCommitted.selector);
-    //     zerolink.deposit{value: 1 ether}(nullifierSecretHash);
-    // }
+        vm.prank(bob);
+        vm.expectRevert(ZeroLink.LeafAlreadyCommitted.selector);
+        zerolink.deposit{value: 1 ether}(nullifierSecretHash);
+    }
 
-    // /* ------------- withdraw ------------- */
+    /* ------------- withdraw ------------- */
 
-    // /// Can successfully withdraw.
-    // function test_withdraw() public {
-    //     setUpProofAlice();
+    /// Can successfully withdraw.
+    function test_withdraw() public {
+        setUpProofAlice();
 
-    //     // Able to deposit.
-    //     vm.prank(alice);
-    //     zerolink.deposit{value: 1 ether}(nullifierSecretHash);
+        // Able to deposit.
+        vm.prank(alice);
+        zerolink.deposit{value: 1 ether}(nullifierSecretHash);
 
-    //     // Read new `root`.
-    //     root = zerolink.root();
+        // Read new `root`.
+        root = zerolink.root();
 
-    //     // Can withdraw funds.
-    //     vm.prank(alice);
-    //     zerolink.withdraw(nullifier, root, proof);
+        // Can withdraw funds.
+        vm.prank(alice);
+        zerolink.withdraw(nullifier, root, proof);
 
-    //     // Receiver gets funds back.
-    //     assertEq(alice.balance, 100 ether);
-    // }
+        // Receiver gets funds back.
+        assertEq(alice.balance, 100 ether);
+    }
 
-    // /// Can successfully withdraw with old root.
-    // function test_withdraw_old_root() public {
-    //     setUpProofAlice();
+    /// Can successfully withdraw with old root.
+    function test_withdraw_old_root() public {
+        setUpProofAlice();
 
-    //     vm.prank(alice);
-    //     zerolink.deposit{value: 1 ether}(nullifierSecretHash);
+        vm.prank(alice);
+        zerolink.deposit{value: 1 ether}(nullifierSecretHash);
 
-    //     vm.prank(bob);
-    //     zerolink.deposit{value: 1 ether}(hex"1234");
+        vm.prank(bob);
+        zerolink.deposit{value: 1 ether}(hex"1234");
 
-    //     // Alice's proof is still valid.
-    //     vm.prank(alice);
-    //     zerolink.withdraw(nullifier, root, proof);
-    // }
+        // Alice's proof is still valid.
+        vm.prank(alice);
+        zerolink.withdraw(nullifier, root, proof);
+    }
 
-    // /// Can't withdraw with a valid proof but invalid root.
-    // function test_withdraw_revert_InvalidRoot() public {
-    //     setUpProofAlice();
+    /// Can't withdraw with a valid proof but invalid root.
+    function test_withdraw_revert_InvalidRoot() public {
+        setUpProofAlice();
 
-    //     // `root` corresponds to valid proof, but it was never committed.
-    //     vm.prank(alice);
-    //     vm.expectRevert(ZeroLink.InvalidRoot.selector);
-    //     zerolink.withdraw(nullifier, root, proof);
-    // }
+        // `root` corresponds to valid proof, but it was never committed.
+        vm.prank(alice);
+        vm.expectRevert(ZeroLink.InvalidRoot.selector);
+        zerolink.withdraw(nullifier, root, proof);
+    }
 
-    // /// The same `nullifier` cannot be used twice.
-    // function test_withdraw_revert_NullifierUsed() public {
-    //     setUpProofAlice();
+    /// The same `nullifier` cannot be used twice.
+    function test_withdraw_revert_NullifierUsed() public {
+        setUpProofAlice();
 
-    //     vm.prank(alice);
-    //     zerolink.deposit{value: 1 ether}(nullifierSecretHash);
+        vm.prank(alice);
+        zerolink.deposit{value: 1 ether}(nullifierSecretHash);
 
-    //     vm.prank(alice);
-    //     zerolink.withdraw(nullifier, root, proof);
+        vm.prank(alice);
+        zerolink.withdraw(nullifier, root, proof);
 
-    //     vm.prank(alice);
-    //     vm.expectRevert(ZeroLink.NullifierUsed.selector);
-    //     zerolink.withdraw(nullifier, root, proof);
-    // }
+        vm.prank(alice);
+        vm.expectRevert(ZeroLink.NullifierUsed.selector);
+        zerolink.withdraw(nullifier, root, proof);
+    }
 
-    // /// The call to `verifyProof` cannot be front-run.
-    // function test_verify_revert_PROOF_FAILURE_invalidSender(address sender) public {
-    //     vm.assume(sender != alice);
+    /// The call to `verifyProof` cannot be front-run.
+    function test_verify_revert_PROOF_FAILURE_invalidSender(address sender) public {
+        vm.assume(sender != alice);
 
-    //     // Alice deposits.
-    //     vm.prank(alice);
-    //     zerolink.deposit{value: 1 ether}(nullifierSecretHash);
+        // Alice deposits.
+        vm.prank(alice);
+        zerolink.deposit{value: 1 ether}(nullifierSecretHash);
 
-    //     // Alice generates withdrawal proof,
-    //     setUpProofAlice();
+        // Alice generates withdrawal proof,
+        setUpProofAlice();
 
-    //     // Alice is front-run by `sender` who uses the same data.
-    //     vm.prank(sender);
-    //     vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-    //     zerolink.withdraw(nullifier, root, proof);
-    // }
+        // Alice is front-run by `sender` who uses the same data.
+        vm.prank(sender);
+        vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
+        zerolink.withdraw(nullifier, root, proof);
+    }
 
-    // /// Cannot modify `nullifier` in proof.
-    // function test_verify_revert_PROOF_FAILURE_invalid_nullifier(bytes32 nullifier_) public {
-    //     nullifier_ = asField(nullifier_);
+    /// Cannot modify `nullifier` in proof.
+    function test_verify_revert_PROOF_FAILURE_invalid_nullifier(bytes32 nullifier_) public {
+        nullifier_ = asField(nullifier_);
 
-    //     vm.assume(nullifier != nullifier_);
+        vm.assume(nullifier != nullifier_);
 
-    //     setUpProofAlice();
+        setUpProofAlice();
 
-    //     vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-    //     zerolink.verifyProof(alice, nullifier_, root, proof);
-    // }
+        vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
+        zerolink.verifyProof(alice, nullifier_, root, proof);
+    }
 
-    // /// Cannot modify `root` in proof.
-    // function test_verify_revert_PROOF_FAILURE_invalid_root(bytes32 root_) public {
-    //     root_ = asField(root_);
+    /// Cannot modify `root` in proof.
+    function test_verify_revert_PROOF_FAILURE_invalid_root(bytes32 root_) public {
+        root_ = asField(root_);
 
-    //     vm.assume(root != root_);
+        vm.assume(root != root_);
 
-    //     setUpProofAlice();
+        setUpProofAlice();
 
-    //     vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-    //     zerolink.verifyProof(alice, nullifier, root_, proof);
-    // }
+        vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
+        zerolink.verifyProof(alice, nullifier, root_, proof);
+    }
 
-    // /// Cannot modify `proof`.
-    // function test_verify_revert_invalidProof(bytes calldata proof_) public {
-    //     vm.assume(keccak256(proof) != keccak256(proof_));
+    /// Cannot modify `proof`.
+    function test_verify_revert_invalidProof(bytes calldata proof_) public {
+        vm.assume(keccak256(proof) != keccak256(proof_));
 
-    //     setUpProofAlice();
+        setUpProofAlice();
 
-    //     vm.expectRevert();
-    //     zerolink.verifyProof(alice, nullifier, root, proof_);
-    // }
+        vm.expectRevert();
+        zerolink.verifyProof(alice, nullifier, root, proof_);
+    }
 
-    // /// Cannot modify any proof inputs.
-    // function test_verify_revert_invalidInputs(address sender, bytes calldata proof_, bytes32 nullifier_, bytes32 root_)
-    //     public
-    // {
-    //     bool validProof;
-    //     validProof = validProof && root == root_;
-    //     validProof = validProof && sender == alice;
-    //     validProof = validProof && nullifier == nullifier_;
-    //     validProof = validProof && keccak256(proof) == keccak256(proof_);
-    //     vm.assume(!validProof);
+    /// Cannot modify any proof inputs.
+    function test_verify_revert_invalidInputs(address sender, bytes calldata proof_, bytes32 nullifier_, bytes32 root_)
+        public
+    {
+        bool validProof;
+        validProof = validProof && root == root_;
+        validProof = validProof && sender == alice;
+        validProof = validProof && nullifier == nullifier_;
+        validProof = validProof && keccak256(proof) == keccak256(proof_);
+        vm.assume(!validProof);
 
-    //     vm.expectRevert();
-    //     zerolink.verifyProof(sender, nullifier_, root_, proof_);
-    // }
+        vm.expectRevert();
+        zerolink.verifyProof(sender, nullifier_, root_, proof_);
+    }
 }
