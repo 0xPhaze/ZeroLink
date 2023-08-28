@@ -18,8 +18,8 @@ fn compute_merkle_root(key: [u1; DEPTH], leaf: [u8; 32], nodes: [u8; 32 * DEPTH]
     let mut right = root;
 
     // Or hash it with right zero subtree `zeros(i)`,
-    // depending on `key`s i-th least-significant bit.
-    if (key[DEPTH - 1 - i] == 0) {
+    // depending on `key`s i-th bit.
+    if (key[i] == 0) {
       left = root;
       right = z;
     } 
@@ -145,12 +145,37 @@ fn test_compute_merkle_root() {
 
 #[test]
 fn test_main() {
-  let receiver  = 0x0a11ce;
+  let receiver  = 0x00000000000000000000000000000000000A11cE;
   let key       = [0; DEPTH];
-  let nullifier = [0x00 as u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x22, 0x22, 0x44, 0x44, 0x88, 0x88];
-  let secret    = [0x00 as u8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x13, 0x37];
+  let nullifier = [0x22 as u8, 0x22, 0x44, 0x44, 0x88, 0x88, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  let secret    = [0x13 as u8, 0x37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
   let leaf      = hash(nullifier, secret);
   let nodes     = helper_get_zero_nodes();
+  let root      = compute_merkle_root(key, leaf, nodes);
+
+  std::println("receiver =");
+  std::println(receiver);
+  std::println("key =");
+  std::println(key);
+  std::println("nullifier =");
+  std::println(nullifier);
+  std::println("secret =");
+  std::println(secret);
+  std::println("leaf =");
+  std::println(leaf);
+  std::println("nodes =");
+  std::println(nodes);
+  std::println("root =");
+  std::println(root);
+
+  main(receiver, key, nullifier, secret, nodes, root);
+
+  let receiver  = 0x0000000000000000000000000000000000000B0b;
+  let key       = [1, 0, 0, 0];
+  let nullifier = [0xab as u8, 0xcd, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  let secret    = [0x12 as u8, 0x34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  let leaf      = hash(nullifier, secret);
+  let nodes     = [0xe2 as u8,0x4b,0xc9,0xee,0x22,0xe1,0xb0,0x7b,0xf1,0x3e,0x1d,0x42,0x48,0xc1,0xf6,0xcd,0x95,0xbc,0x32,0x65,0xfe,0xda,0xc5,0x8f,0x13,0xf8,0xb6,0x02,0xcb,0xd1,0x70,0x7a , 180, 193, 25, 81, 149, 124, 111, 143, 100, 44, 74, 246, 28, 214, 178, 70, 64, 254, 198, 220, 127, 198, 7, 238, 130, 6, 169, 158, 146, 65, 13, 48, 33, 221, 185, 163, 86, 129, 92, 63, 172, 16, 38, 182, 222, 197, 223, 49, 36, 175, 186, 219, 72, 92, 155, 165, 163, 227, 57, 138, 4, 183, 186, 133, 229, 135, 105, 179, 42, 27, 234, 241, 234, 39, 55, 90, 68, 9, 90, 13, 31, 182, 100, 206, 45, 211, 88, 231, 252, 191, 183, 140, 38, 161, 147, 68];
   let root      = compute_merkle_root(key, leaf, nodes);
 
   std::println("receiver =");

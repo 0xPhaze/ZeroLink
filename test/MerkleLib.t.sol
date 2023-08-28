@@ -5,19 +5,24 @@ import {Test, console2 as console} from "forge-std/Test.sol";
 import {MerkleLib, DEPTH} from "../src/MerkleLib.sol";
 
 contract MerkleLibTest is Test {
-    function toStringBytes1(bytes1 b) public pure returns (string memory out) {
-        out = vm.toString(b);
-        assembly {
-            mstore(out, 0x04)
-        }
+    uint256 key;
+    bytes32 nullifier;
+    bytes32 secret;
+    bytes32 leaf;
+    bytes32 root;
+    bytes32[DEPTH] nodes;
+
+    constructor() {
+        // Initialize inner nodes of empty tree.
+        (root, nodes) = MerkleLib.getEmptyTree();
     }
 
-    function toStringBytes(bytes memory b) public pure returns (string memory out) {
-        for (uint256 i; i < b.length; i++) {
-            if (i == 0) out = string.concat('["', toStringBytes1(b[i]));
-            else out = string.concat(out, '", "', toStringBytes1(b[i]));
+    function logNodes() internal view {
+        console.log();
+        for (uint256 i; i < DEPTH; i++) {
+            console.log(i, vm.toString(nodes[i]));
         }
-        out = string.concat(out, '"]');
+        console.log("root", vm.toString(root));
     }
 
     /// Test `MerkleLib.zeros` return correct hash values.
@@ -29,29 +34,33 @@ contract MerkleLibTest is Test {
 
             assertEq(MerkleLib.zeros(i), node);
         }
-    }
 
-    /// Validate `Prover.toml` inputs.
-    function test_computeRoot_toy_example() public {
-        // Insert `leaf` into an empty tree (position 0).
-        uint256 key;
-        bytes32 nullifier = bytes32(uint256(0x222244448888));
-        bytes32 secret = bytes32(uint256(0x1337));
-        bytes32 leaf = 0xce0d28d72737db4c1aa07822707c7f7f825e39ccc548332728a9f923cde0263b;
-        bytes32 root = 0x88003085d942aed66badd8d8a2e3d928aa7d1866d0d44b28e660a16579bf3881;
-        bytes32[DEPTH] memory nodes;
-
-        assertEq(MerkleLib.hash(nullifier, secret), leaf);
-        assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
+        vm.expectRevert(MerkleLib.InvalidZerosLevel.selector);
+        MerkleLib.zeros(DEPTH + 1);
     }
 
     /// Test computing and updating merkle root.
-    function test_computeRoot_append() public {
-        // Insert `leaf` into an empty tree (position 0).
-        bytes32 root;
-        uint256 key;
-        bytes32 leaf = keccak256("leaf_1");
-        bytes32[DEPTH] memory nodes;
+    function test_computeRoot() public {
+        /* ------------- leaf_1 ------------- */
+
+        //               ...
+        //               /
+        //              o
+        //            /    \
+        //          /        \
+        //        /            \
+        //       o           node[1]             zero(1)
+        //      /  \            /  \             /
+        //     /    \          /    \           /
+        //    /      \        /      \         /
+        // leaf_1  node[0] zero(0) zero(0)  zero(0)
+
+        // Start with an empty tree.
+        (root, nodes) = MerkleLib.getEmptyTree();
+
+        // Insert `leaf` into an empty tree at position 0.
+        key = 0;
+        leaf = keccak256("leaf_1");
 
         // Recompute root with `leaf` at leftmost key.
         root = leaf;
@@ -63,8 +72,31 @@ contract MerkleLibTest is Test {
 
         assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
 
+        nodes[0] = leaf;
+
+        // Should also be able to arrive at same `root`
+        // starting at any other zero leaf.
+        key = 1;
+        leaf = MerkleLib.zeros(0);
+
+        assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
+
+        /* ------------- leaf_2 ------------- */
+
+        //               ...
+        //               /
+        //              o
+        //            /    \
+        //          /        \
+        //        /            \
+        //       o           node[1]             zero(1)
+        //      /  \            /  \             /
+        //     /    \          /    \           /
+        //    /      \        /      \         /
+        // node[0]  leaf_2 zero(0) zero(0)  zero(0)
+
         // Update tree nodes.
-        nodes[key] = leaf;
+        nodes[0] = keccak256("leaf_1");
 
         // Insert another `leaf` into tree at position 1.
         key = 1;
@@ -80,10 +112,41 @@ contract MerkleLibTest is Test {
 
         assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
 
-        // Update tree nodes with subtree.
-        nodes[key] = MerkleLib.hash(nodes[0], leaf);
+        // Prove equal `root` starting from `key = 0`.
+        key = 0;
+        nodes[0] = leaf;
+        leaf = keccak256("leaf_1");
 
-        // Insert another `leaf` into tree.
+        assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
+
+        // Prove equal `root` starting from `key = 2`.
+        key = 2;
+        nodes[0] = MerkleLib.zeros(0);
+        nodes[1] = MerkleLib.hash(keccak256("leaf_1"), keccak256("leaf_2"));
+        leaf = MerkleLib.zeros(0);
+
+        assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
+
+        /* ------------- leaf_3 ------------- */
+
+        //               ...
+        //               /
+        //              o
+        //            /    \
+        //          /        \
+        //        /            \
+        //     node[1]           o             zero(1)
+        //      /  \            /  \             /
+        //     /    \          /    \           /
+        //    /      \        /      \         /
+        // leaf_1  leaf_2 leaf_3   node[0]  zero(0)
+
+        // Reset first node to zero node.
+        nodes[0] = MerkleLib.zeros(0);
+        // Update sub-tree node.
+        nodes[1] = MerkleLib.hash(keccak256("leaf_1"), keccak256("leaf_2"));
+
+        // Insert another `leaf` into tree at position 2.
         key = 2;
         leaf = keccak256("leaf_3");
 
@@ -99,36 +162,48 @@ contract MerkleLibTest is Test {
         }
 
         assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
+
+        // Prove equal `root` starting from `key = 1`.
+        key = 1;
+        leaf = keccak256("leaf_2");
+        nodes[0] = keccak256("leaf_1");
+        nodes[1] = MerkleLib.hash(keccak256("leaf_3"), MerkleLib.zeros(0));
+
+        assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
     }
 
-    // function test_logZeros() public {
-    //     bytes32 node;
+    /// Test computing and updating merkle root.
+    function test_appendLeaf() public {
+        // Start with an empty tree.
+        (root, nodes) = MerkleLib.getEmptyTree();
 
-    //     for (uint256 i; i < DEPTH; i++) {
-    //         node = MerkleLib.hash(node, node);
-    //         console.log()
+        // Insert `leaf` into an empty tree at position 0.
+        key = 0;
+        leaf = keccak256("leaf_1");
 
-    //         assertEq(MerkleLib.zeros(i + 1), node);
-    //     }
-    // }
+        (root, nodes) = MerkleLib.appendLeaf(key, leaf, nodes);
 
-    // function test_print_computeRoot() public pure {
-    //     // Insert `leaf` into an empty tree (position 0).
-    //     uint256 key;
-    //     bytes32 nullifier = bytes32(uint256(0x222244448888));
-    //     bytes32 secret = bytes32(uint256(0x1337));
-    //     bytes32[DEPTH] memory nodes;
+        // Insert another `leaf` into tree at position 1.
+        key = 1;
+        leaf = keccak256("leaf_2");
 
-    //     bytes32 leaf = MerkleLib.hash(nullifier, secret);
+        (root, nodes) = MerkleLib.appendLeaf(key, leaf, nodes);
 
-    //     console.log("root =", toStringBytes(abi.encode(MerkleLib.computeRoot(key, leaf, nodes))));
+        // Insert another `leaf` into tree at position 2.
+        key = 2;
+        leaf = keccak256("leaf_3");
 
-    //     // bytes memory nodesBytes;
-    //     for (uint256 i; i < DEPTH; i++) {
-    //         nodes[i] = MerkleLib.zeros(i);
-    //         // nodesBytes = bytes.concat(nodesBytes, MerkleLib.zeros(i));
-    //     }
+        (root, nodes) = MerkleLib.appendLeaf(key, leaf, nodes);
 
-    //     console.log("nodes =", toStringBytes(abi.encode(nodes)));
-    // }
+        // Prove inclusion of "leaf_2" starting at `key = 1`.
+        key = 1;
+        leaf = keccak256("leaf_2");
+
+        // Configure proof nodes.
+        (, nodes) = MerkleLib.getEmptyTree();
+        nodes[0] = keccak256("leaf_1");
+        nodes[1] = MerkleLib.hash(keccak256("leaf_3"), MerkleLib.zeros(0));
+
+        assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
+    }
 }

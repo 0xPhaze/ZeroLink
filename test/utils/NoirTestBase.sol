@@ -12,10 +12,11 @@ contract NoirTestBase is Test {
     /// @dev Prime field order
     uint256 constant PRIME_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     string constant CIRCUITS_DIR = "circuits";
-    string constant PROVER_FILE = "circuits/Prover.toml";
+    string constant PROVER_FILE = "Prover.toml";
     string constant PROOF_FILE = "circuits/proofs/ZeroLink.proof";
+    string constant GENERATE_PROOF_SCRIPT = "generate_proof.sh";
 
-    function getProofBytes() internal view returns (bytes memory proof) {
+    function readProofBytes() internal view returns (bytes memory proof) {
         proof = vm.parseBytes(vm.readLine(PROOF_FILE));
     }
 
@@ -48,10 +49,13 @@ contract NoirTestBase is Test {
         out = string.concat(out, "]");
     }
 
-    function toStringBinaryArray(bytes memory b) internal pure returns (string memory out) {
-        for (uint256 i; i < b.length; i++) {
-            if (i == 0) out = string.concat("[", vm.toString(uint8(b[i >> 3]) >> (7 - (i & 7)) & 1));
-            else out = string.concat(out, ", ", vm.toString(uint8(b[i >> 3]) >> (7 - (i & 7)) & 1));
+    function toStringBinaryArray(bytes memory b, uint256 lsb) internal pure returns (string memory out) {
+        if (lsb > b.length << 3) lsb = b.length >> 3;
+
+        for (uint256 i; i < lsb; i++) {
+            uint256 j = (b.length << 3) - i - 1; // Start from least significant bit.
+            uint8 bit = (uint8(b[j >> 3]) >> (7 - (j & 7))) & 1; // Read j-th bit from `b` bytestring.
+            out = string.concat(out, i == 0 ? "[" : ", ", vm.toString(bit));
         }
 
         out = string.concat(out, "]");
@@ -70,32 +74,43 @@ contract NoirTestBase is Test {
         uint256 key,
         bytes32 nullifier,
         bytes32 secret,
-        bytes32[DEPTH] memory nodes
-    ) internal returns (bytes memory out) {
-        vm.writeFile(PROVER_FILE, "");
-        vm.writeLine(PROVER_FILE, string.concat("receiver = ", quote(vm.toString(receiver))));
-        vm.writeLine(PROVER_FILE, string.concat("key = ", toStringBinaryArray(abi.encode(key))));
-        vm.writeLine(PROVER_FILE, string.concat("nullifier = ", toStringUint8Array(abi.encode(nullifier))));
-        vm.writeLine(PROVER_FILE, string.concat("secret = ", toStringUint8Array(abi.encode(secret))));
-        vm.writeLine(PROVER_FILE, string.concat("nodes = ", toStringUint8Array(abi.encode(nodes))));
+        bytes32[DEPTH] memory nodes,
+        bytes32 root,
+        string memory proverFile
+    ) internal returns (bytes memory proof) {
+        // Bash script executes inside `CIRCUITS_DIR`.
+        string memory proverFileAbs = string.concat(CIRCUITS_DIR, "/", proverFile);
 
-        // string[] memory script = new string[](4);
-        // script[0] = "cd";
-        // script[1] = CIRCUITS_DIR;
-        // out = vm.ffi(script);
+        // Write prover data.
+        vm.writeFile(proverFileAbs, "");
+        vm.writeLine(proverFileAbs, string.concat("receiver = ", quote(vm.toString(receiver))));
+        vm.writeLine(proverFileAbs, string.concat("key = ", toStringBinaryArray(abi.encode(key), DEPTH)));
+        vm.writeLine(proverFileAbs, string.concat("nullifier = ", toStringUint8Array(abi.encode(nullifier))));
+        vm.writeLine(proverFileAbs, string.concat("secret = ", toStringUint8Array(abi.encode(secret))));
+        vm.writeLine(proverFileAbs, string.concat("nodes = ", toStringUint8Array(abi.encode(nodes))));
+        vm.writeLine(proverFileAbs, string.concat("root = ", toStringUint8Array(abi.encode(root))));
 
-        // script = new string[](1);
-        // script[0] = "ls";
+        // Execute `nargo prove` to generate the proof.
+        string[] memory script = new string[](3);
 
-        string[] memory script = new string[](5);
-        script[0] = "cd";
-        script[1] = CIRCUITS_DIR;
-        script[2] = "&&";
-        script[3] = "nargo";
-        script[4] = "prove";
+        script[0] = "bash";
+        script[1] = GENERATE_PROOF_SCRIPT;
+        script[2] = proverFile;
 
-        out = vm.ffi(script);
+        vm.ffi(script);
 
-        console.log(string(out));
+        // Read generated proof file.
+        proof = readProofBytes();
+
+        // Don't cleanup main `Prover.toml`.
+        if (keccak256(bytes(proverFile)) == keccak256(bytes(PROVER_FILE))) return proof;
+
+        // // Cleanup temporary prover files.
+        // script = new string[](2);
+
+        // script[0] = "rm";
+        // script[1] = proverFileAbs;
+
+        // vm.ffi(script);
     }
 }
