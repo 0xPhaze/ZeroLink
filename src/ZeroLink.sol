@@ -37,8 +37,8 @@ contract ZeroLink is UltraVerifier {
     ///      The leaf `nullifierSecretHash` is the hash of the
     ///      `nullifier` and `secret` private values.
     function deposit(bytes32 nullifierSecretHash) public payable {
-        // Require 1 ether deposit value.
-        if (msg.value != 1 ether) revert InvalidDepositAmount();
+        // Require `DEPOSIT_AMOUNT` deposit value.
+        if (msg.value != DEPOSIT_AMOUNT) revert InvalidDepositAmount();
         // Prevent committing an already existing leaf as
         // the `nullifier` cannot be spent twice.
         if (committedLeafs[nullifierSecretHash]) revert LeafAlreadyCommitted();
@@ -72,7 +72,7 @@ contract ZeroLink is UltraVerifier {
         _verifyProof(msg.sender, nullifier, root_, proof);
 
         // Refund caller.
-        (bool success,) = msg.sender.call{value: 1 ether}("");
+        (bool success,) = msg.sender.call{value: DEPOSIT_AMOUNT}("");
         if (!success) revert TransferFailed();
     }
 
