@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {UltraVerifier} from "../circuits/contract/ZeroLink/plonk_vk.sol";
+import {NoirUtils} from "./NoirUtils.sol";
 import {MerkleLib, DEPTH} from "./MerkleLib.sol";
 
 contract ZeroLink is UltraVerifier {
@@ -91,19 +92,11 @@ contract ZeroLink is UltraVerifier {
 
     function _verifyProof(address receiver, bytes32 nullifier, bytes32 root_, bytes calldata proof) internal view {
         // Set up public inputs for `proof` verification.
-        bytes32[] memory publicInputs = new bytes32[](65);
+        bytes32[] memory publicInputs = new bytes32[](3);
 
         publicInputs[0] = bytes32(uint256(uint160(receiver)));
-        // publicInputs[1] = nullifier;
-        // publicInputs[2] = root_;
-
-        for (uint256 i; i < 32; i++) {
-            publicInputs[1 + i] = bytes32(uint256(uint8(nullifier[i])));
-        }
-
-        for (uint256 i; i < 32; i++) {
-            publicInputs[33 + i] = bytes32(uint256(uint8(root_[i])));
-        }
+        publicInputs[1] = NoirUtils.toField(nullifier);
+        publicInputs[2] = NoirUtils.toField(root_);
 
         // Verify zero knowledge proof.
         this.verify(proof, publicInputs);

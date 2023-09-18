@@ -20,24 +20,19 @@ contract NoirTestBase is Test {
         proof = vm.parseBytes(vm.readLine(PROOF_FILE));
     }
 
-    function toField(uint256 x) internal pure returns (uint256) {
-        if (x >= PRIME_FIELD) revert InvalidFieldElement();
+    function toStringBytes32Array(bytes memory b) internal pure returns (string memory out) {
+        bytes32[] memory a;
+        assembly {
+            a := b
+            mstore(b, shr(5, mload(b))) // Not safe.
+        }
 
-        return x;
-    }
+        for (uint256 i; i < a.length; i++) {
+            if (i == 0) out = string.concat("[", quote(vm.toString(a[i])));
+            else out = string.concat(out, ", ", quote(vm.toString(a[i])));
+        }
 
-    function toField(bytes32 x) internal pure returns (bytes32) {
-        if (uint256(x) >= PRIME_FIELD) revert InvalidFieldElement();
-
-        return x;
-    }
-
-    function asField(uint256 x) internal pure returns (uint256) {
-        return x % PRIME_FIELD;
-    }
-
-    function asField(bytes32 x) internal pure returns (bytes32) {
-        return bytes32(uint256(x) % PRIME_FIELD);
+        out = string.concat(out, "]");
     }
 
     function toStringUint8Array(bytes memory b) internal pure returns (string memory out) {
@@ -85,10 +80,10 @@ contract NoirTestBase is Test {
         vm.writeFile(proverFileAbs, "");
         vm.writeLine(proverFileAbs, string.concat("receiver = ", quote(vm.toString(receiver))));
         vm.writeLine(proverFileAbs, string.concat("key = ", toStringBinaryArray(abi.encode(key), DEPTH)));
-        vm.writeLine(proverFileAbs, string.concat("nullifier = ", toStringUint8Array(abi.encode(nullifier))));
-        vm.writeLine(proverFileAbs, string.concat("secret = ", toStringUint8Array(abi.encode(secret))));
-        vm.writeLine(proverFileAbs, string.concat("nodes = ", toStringUint8Array(abi.encode(nodes))));
-        vm.writeLine(proverFileAbs, string.concat("root = ", toStringUint8Array(abi.encode(root))));
+        vm.writeLine(proverFileAbs, string.concat("nullifier = ", quote(vm.toString(bytes32(nullifier)))));
+        vm.writeLine(proverFileAbs, string.concat("secret = ", quote(vm.toString(bytes32(secret)))));
+        vm.writeLine(proverFileAbs, string.concat("nodes = ", toStringBytes32Array(abi.encode(nodes))));
+        vm.writeLine(proverFileAbs, string.concat("root = ", quote(vm.toString(bytes32(root)))));
 
         // Execute `nargo prove` to generate the proof.
         string[] memory script = new string[](3);
@@ -97,10 +92,10 @@ contract NoirTestBase is Test {
         script[1] = GENERATE_PROOF_SCRIPT;
         script[2] = proverFile;
 
-        vm.ffi(script);
+        // Generate proof data.
+        proof = vm.ffi(script);
 
-        // Read generated proof file.
-        proof = readProofBytes();
+        require(proof.length != 0, "Invalid proof received");
 
         // Don't cleanup main `Prover.toml`.
         if (keccak256(bytes(proverFile)) == keccak256(bytes(PROVER_FILE))) return proof;

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Test, console2 as console} from "forge-std/Test.sol";
 import {MerkleLib, DEPTH} from "../src/MerkleLib.sol";
+import {Poseidon} from "../src/Poseidon.sol";
 
 contract MerkleLibTest is Test {
     uint256 key;
@@ -34,7 +35,9 @@ contract MerkleLibTest is Test {
 
             assertEq(MerkleLib.zeros(i), node);
         }
+    }
 
+    function test_zeros_revert_InvalidZerosLevel() public {
         vm.expectRevert(MerkleLib.InvalidZerosLevel.selector);
         MerkleLib.zeros(DEPTH + 1);
     }

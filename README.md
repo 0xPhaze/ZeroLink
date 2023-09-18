@@ -1,6 +1,6 @@
 # [ZeroLink](https://github.com/anupsv/ZeroLink-monorepo)
 
-ZK privacy pools using [Noir](https://noir-lang.org/).
+ZK [privacy pools](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4563364) using [Noir](https://noir-lang.org/).
 
 ```ml
 .

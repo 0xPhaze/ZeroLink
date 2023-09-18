@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import {Poseidon} from "./Poseidon.sol";
+
 uint256 constant DEPTH = 4;
 
 library MerkleLib {
     error InvalidZerosLevel();
 
-    /// @notice Efficiently hashes two values `left` and `right`.
+    /// @notice Hashes two values `left` and `right`.
     function hash(bytes32 left, bytes32 right) internal pure returns (bytes32 result) {
-        /// @solidity memory-safe-assembly
-        assembly {
-            mstore(0x00, left)
-            mstore(0x20, right)
+        return bytes32(Poseidon.hash(uint256(left), uint256(right)));
+    }
 
-            result := keccak256(0x00, 0x40)
-        }
+    /// @notice Hashes two values `left` and `right`.
+    function hash(uint256 left, uint256 right) internal pure returns (uint256 result) {
+        return Poseidon.hash(left, right);
     }
 
     /// @notice Computes the merkle root starting with `leaf` at given `key`.
@@ -77,11 +78,11 @@ library MerkleLib {
 
     /// @notice Returns pre-computed zero sub-trees of depth `level`.
     function zeros(uint256 level) internal pure returns (bytes32) {
-        if (level == 0) return 0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5;
-        if (level == 1) return 0xb4c11951957c6f8f642c4af61cd6b24640fec6dc7fc607ee8206a99e92410d30;
-        if (level == 2) return 0x21ddb9a356815c3fac1026b6dec5df3124afbadb485c9ba5a3e3398a04b7ba85;
-        if (level == 3) return 0xe58769b32a1beaf1ea27375a44095a0d1fb664ce2dd358e7fcbfb78c26a19344;
-        if (level == 4) return 0x0eb01ebfc9ed27500cd4dfc979272d1f0913cc9f66540d7e8005811109e1cf2d;
+        if (level == 0) return 0x2098f5fb9e239eab3ceac3f27b81e481dc3124d55ffed523a839ee8446b64864;
+        if (level == 1) return 0x1069673dcdb12263df301a6ff584a7ec261a44cb9dc68df067a4774460b1f1e1;
+        if (level == 2) return 0x18f43331537ee2af2e3d758d50f72106467c6eea50371dd528d57eb2b856d238;
+        if (level == 3) return 0x07f9d837cb17b0d36320ffe93ba52345f1b728571a568265caac97559dbc952a;
+        if (level == 4) return 0x2b94cf5e8746b3f5c9631f4c5df32907a699c58c94b2ad4d7b5cec1639183f55;
         revert InvalidZerosLevel();
     }
 }
