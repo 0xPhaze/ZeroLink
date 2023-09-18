@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Test, console2 as console} from "forge-std/Test.sol";
 
-import {DEPTH} from "../../src/MerkleLib.sol";
+import {DEPTH} from "../../src/utils/MerkleLib.sol";
 
 /// @notice Noir test base contract
 contract NoirTestBase is Test {

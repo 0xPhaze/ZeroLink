@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Test, console2 as console} from "forge-std/Test.sol";
-import {MerkleLib, DEPTH} from "../src/MerkleLib.sol";
-import {NoirUtils} from "../src/NoirUtils.sol";
-// import {PoseidonT2} from "../src/Poseidon.sol";
+
+import {MerkleLib, DEPTH} from "../src/utils/MerkleLib.sol";
+import {NoirUtils} from "../src/utils/NoirUtils.sol";
 
 contract MerkleLibTest is Test {
     using NoirUtils for bytes32;

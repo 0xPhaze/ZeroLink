@@ -2,8 +2,8 @@
 pragma solidity ^0.8.13;
 
 import {UltraVerifier} from "../circuits/contract/ZeroLink/plonk_vk.sol";
-import {NoirUtils} from "./NoirUtils.sol";
-import {MerkleLib, DEPTH} from "./MerkleLib.sol";
+import {MerkleLib, DEPTH} from "./utils/MerkleLib.sol";
+import {NoirUtils} from "./utils/NoirUtils.sol";
 
 contract ZeroLink is UltraVerifier {
     error InvalidRoot();

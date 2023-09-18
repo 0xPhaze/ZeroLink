@@ -3,13 +3,12 @@ pragma solidity ^0.8.13;
 
 import {Test, console2 as console} from "forge-std/Test.sol";
 
-import {ZeroLink} from "../src/ZeroLink.sol";
-import {NoirUtils} from "../src/NoirUtils.sol";
-import {MerkleLib, DEPTH} from "../src/MerkleLib.sol";
-import {BaseUltraVerifier} from "../circuits/contract/ZeroLink/plonk_vk.sol";
-
 import {NoirTestBase} from "./utils/NoirTestBase.sol";
-import {NoirUtils} from "../src/NoirUtils.sol";
+
+import {BaseUltraVerifier} from "../circuits/contract/ZeroLink/plonk_vk.sol";
+import {MerkleLib, DEPTH} from "../src/utils/MerkleLib.sol";
+import {NoirUtils} from "../src/utils/NoirUtils.sol";
+import {ZeroLink} from "../src/ZeroLink.sol";
 
 /// @notice Exposes helper functions on `ZeroLink`
 contract MockZeroLink is ZeroLink {
