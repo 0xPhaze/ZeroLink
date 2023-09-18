@@ -55,7 +55,7 @@ contract ZeroLink is UltraVerifier {
         (root, nodes) = MerkleLib.appendLeaf(key++, leaf, nodes);
     }
 
-    function withdraw(uint256 nullifier, uint256 root_, bytes calldata proof) public {
+    function withdraw(address receiver, uint256 nullifier, uint256 root_, bytes calldata proof) public {
         // Check `nullifier` to prevent replay.
         if (nullifierUsed[nullifier]) revert NullifierUsed();
 
@@ -68,11 +68,11 @@ contract ZeroLink is UltraVerifier {
         // The prover verifies the zero knowledge proof, demonstrating
         // * Knowledge of pre-image of a leaf: `hash(secret + 1)`.
         // * The leaf is contained in a merkle tree with root `root`.
-        // * The proof is generated for `msg.sender`.
-        _verifyProof(msg.sender, nullifier, root_, proof);
+        // * The proof is generated for `receiver`.
+        _verifyProof(receiver, nullifier, root_, proof);
 
         // Refund caller.
-        (bool success,) = msg.sender.call{value: DEPOSIT_AMOUNT}("");
+        (bool success,) = receiver.call{value: DEPOSIT_AMOUNT}("");
         if (!success) revert TransferFailed();
     }
 

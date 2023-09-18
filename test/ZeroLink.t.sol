@@ -85,7 +85,7 @@ contract ZeroLinkTest is NoirTestBase {
         assertEq(root, zerolink.root());
 
         vm.prank(alice);
-        zerolink.withdraw(nullifier, root, proof);
+        zerolink.withdraw(alice, nullifier, root, proof);
 
         uint256 leaf_1 = leaf;
 
@@ -109,14 +109,14 @@ contract ZeroLinkTest is NoirTestBase {
 
         // zerolink.verifyProof(bob, nullifier, root, proof);
 
-        // Make sure bob can deposit and withdraw.
+        // Make sure bob can deposit and withdraw,
         vm.prank(bob);
         zerolink.deposit{value: 1 ether}(leaf);
 
         assertEq(root, zerolink.root());
 
         vm.prank(bob);
-        zerolink.withdraw(nullifier, root, proof);
+        zerolink.withdraw(bob, nullifier, root, proof);
     }
 
     /* ------------- deposit ------------- */
@@ -158,10 +158,10 @@ contract ZeroLinkTest is NoirTestBase {
 
         // Can withdraw funds.
         vm.prank(alice);
-        zerolink.withdraw(nullifier, root, proof);
+        zerolink.withdraw(alice, nullifier, root, proof);
 
         // Receiver gets funds back.
-        assertEq(alice.balance, 100 ether);
+        assertEq(alice.balance, 1 ether);
     }
 
     /// Can successfully withdraw with old root.
@@ -176,7 +176,7 @@ contract ZeroLinkTest is NoirTestBase {
 
         // Alice's proof is still valid.
         vm.prank(alice);
-        zerolink.withdraw(nullifier, root, proof);
+        zerolink.withdraw(alice, nullifier, root, proof);
     }
 
     /// Can't withdraw with a valid proof but invalid root.
@@ -186,7 +186,7 @@ contract ZeroLinkTest is NoirTestBase {
         // `root` corresponds to valid proof, but it was never committed.
         vm.prank(alice);
         vm.expectRevert(ZeroLink.InvalidRoot.selector);
-        zerolink.withdraw(nullifier, root, proof);
+        zerolink.withdraw(alice, nullifier, root, proof);
     }
 
     /// The same `nullifier` cannot be used twice.
@@ -197,11 +197,11 @@ contract ZeroLinkTest is NoirTestBase {
         zerolink.deposit{value: 1 ether}(leaf);
 
         vm.prank(alice);
-        zerolink.withdraw(nullifier, root, proof);
+        zerolink.withdraw(alice, nullifier, root, proof);
 
         vm.prank(alice);
         vm.expectRevert(ZeroLink.NullifierUsed.selector);
-        zerolink.withdraw(nullifier, root, proof);
+        zerolink.withdraw(alice, nullifier, root, proof);
     }
 
     /// The call to `verifyProof` cannot be front-run.
@@ -218,7 +218,7 @@ contract ZeroLinkTest is NoirTestBase {
         // Alice is front-run by `sender` who uses the same data.
         vm.prank(sender);
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-        zerolink.withdraw(nullifier, root, proof);
+        zerolink.withdraw(sender, nullifier, root, proof);
     }
 
     /// Cannot modify `nullifier` in proof.
