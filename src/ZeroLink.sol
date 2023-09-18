@@ -16,14 +16,14 @@ contract ZeroLink is UltraVerifier {
     uint256 constant DEPOSIT_AMOUNT = 1 ether;
 
     uint256 public key;
-    bytes32 public root;
-    bytes32[DEPTH] public nodes;
+    uint256 public root;
+    uint256[DEPTH] public nodes;
 
     uint256 public rootsIndex;
-    bytes32[NUM_ROOTS] public roots;
+    uint256[NUM_ROOTS] public roots;
 
-    mapping(bytes32 => bool) nullifierUsed;
-    mapping(bytes32 => bool) committedLeafs;
+    mapping(uint256 => bool) nullifierUsed;
+    mapping(uint256 => bool) committedLeafs;
 
     constructor() {
         // Initialize inner nodes of empty tree.
@@ -34,28 +34,28 @@ contract ZeroLink is UltraVerifier {
     ///      append-only merkle tree. Every new leaf appended
     ///      to the next available position in the merkle tree
     ///      at `key`.
-    ///      The leaf `nullifierSecretHash` is the hash of the
-    ///      `nullifier` and `secret` private values.
-    function deposit(bytes32 nullifierSecretHash) public payable {
+    ///      The leaf is the hash of `secret + 1`.
+    function deposit(uint256 leaf) public payable {
         // Require `DEPOSIT_AMOUNT` deposit value.
         if (msg.value != DEPOSIT_AMOUNT) revert InvalidDepositAmount();
         // Prevent committing an already existing leaf as
         // the `nullifier` cannot be spent twice.
-        if (committedLeafs[nullifierSecretHash]) revert LeafAlreadyCommitted();
+        if (committedLeafs[leaf]) revert LeafAlreadyCommitted();
 
         // Mark the leaf as committed.
-        committedLeafs[nullifierSecretHash] = true;
+        committedLeafs[leaf] = true;
 
         // Store old `root` in `roots` array and increase `rootsIndex`.
         roots[rootsIndex++ % NUM_ROOTS] = root;
 
-        // Append leaf `nullifierSecretHash` at index `key` of merkle tree.
-        // Update merkle root and internal nodes inserting `nullifierSecretHash` at index `key`.
+        // Append leaf `leaf` at index `key` of merkle tree.
+        // Update merkle root and internal nodes inserting `leaf` at index `key`.
         // Increment the merkle tree index `key`.
-        (root, nodes) = MerkleLib.appendLeaf(key++, nullifierSecretHash, nodes);
+        // Throws if `leaf` or any of `nodes` is not a field element.
+        (root, nodes) = MerkleLib.appendLeaf(key++, leaf, nodes);
     }
 
-    function withdraw(bytes32 nullifier, bytes32 root_, bytes calldata proof) public {
+    function withdraw(uint256 nullifier, uint256 root_, bytes calldata proof) public {
         // Check `nullifier` to prevent replay.
         if (nullifierUsed[nullifier]) revert NullifierUsed();
 
@@ -66,7 +66,7 @@ contract ZeroLink is UltraVerifier {
         if (!_isValidRoot(root_)) revert InvalidRoot();
 
         // The prover verifies the zero knowledge proof, demonstrating
-        // * Knowledge of pre-image of a leaf: `nullifier` and `secret` hash.
+        // * Knowledge of pre-image of a leaf: `hash(secret + 1)`.
         // * The leaf is contained in a merkle tree with root `root`.
         // * The proof is generated for `msg.sender`.
         _verifyProof(msg.sender, nullifier, root_, proof);
@@ -76,7 +76,7 @@ contract ZeroLink is UltraVerifier {
         if (!success) revert TransferFailed();
     }
 
-    function _isValidRoot(bytes32 root_) internal view returns (bool) {
+    function _isValidRoot(uint256 root_) internal view returns (bool) {
         if (root_ == root) return true;
 
         uint256 endIndex = rootsIndex;
@@ -90,13 +90,13 @@ contract ZeroLink is UltraVerifier {
         return false;
     }
 
-    function _verifyProof(address receiver, bytes32 nullifier, bytes32 root_, bytes calldata proof) internal view {
+    function _verifyProof(address receiver, uint256 nullifier, uint256 root_, bytes calldata proof) internal view {
         // Set up public inputs for `proof` verification.
         bytes32[] memory publicInputs = new bytes32[](3);
 
         publicInputs[0] = bytes32(uint256(uint160(receiver)));
-        publicInputs[1] = NoirUtils.toField(nullifier);
-        publicInputs[2] = NoirUtils.toField(root_);
+        publicInputs[1] = bytes32(NoirUtils.toField(nullifier));
+        publicInputs[2] = bytes32(NoirUtils.toField(root_));
 
         // Verify zero knowledge proof.
         this.verify(proof, publicInputs);

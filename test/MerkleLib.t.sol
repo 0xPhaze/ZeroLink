@@ -3,15 +3,18 @@ pragma solidity ^0.8.20;
 
 import {Test, console2 as console} from "forge-std/Test.sol";
 import {MerkleLib, DEPTH} from "../src/MerkleLib.sol";
-import {Poseidon} from "../src/Poseidon.sol";
+import {NoirUtils} from "../src/NoirUtils.sol";
+// import {PoseidonT2} from "../src/Poseidon.sol";
 
 contract MerkleLibTest is Test {
+    using NoirUtils for bytes32;
+
     uint256 key;
-    bytes32 nullifier;
-    bytes32 secret;
-    bytes32 leaf;
-    bytes32 root;
-    bytes32[DEPTH] nodes;
+    uint256 nullifier;
+    uint256 secret;
+    uint256 leaf;
+    uint256 root;
+    uint256[DEPTH] nodes;
 
     constructor() {
         // Initialize inner nodes of empty tree.
@@ -28,7 +31,7 @@ contract MerkleLibTest is Test {
 
     /// Test `MerkleLib.zeros` return correct hash values.
     function test_zeros() public {
-        bytes32 node;
+        uint256 node;
 
         for (uint256 i; i < DEPTH + 1; i++) {
             node = MerkleLib.hash(node, node);
@@ -63,7 +66,7 @@ contract MerkleLibTest is Test {
 
         // Insert `leaf` into an empty tree at position 0.
         key = 0;
-        leaf = keccak256("leaf_1");
+        leaf = keccak256("leaf_1").asField();
 
         // Recompute root with `leaf` at leftmost key.
         root = leaf;
@@ -99,11 +102,11 @@ contract MerkleLibTest is Test {
         // node[0]  leaf_2 zero(0) zero(0)  zero(0)
 
         // Update tree nodes.
-        nodes[0] = keccak256("leaf_1");
+        nodes[0] = keccak256("leaf_1").asField();
 
         // Insert another `leaf` into tree at position 1.
         key = 1;
-        leaf = keccak256("leaf_2");
+        leaf = keccak256("leaf_2").asField();
 
         // First hash will be with left node ("leaf_1").
         root = MerkleLib.hash(nodes[0], leaf);
@@ -118,14 +121,14 @@ contract MerkleLibTest is Test {
         // Prove equal `root` starting from `key = 0`.
         key = 0;
         nodes[0] = leaf;
-        leaf = keccak256("leaf_1");
+        leaf = keccak256("leaf_1").asField();
 
         assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
 
         // Prove equal `root` starting from `key = 2`.
         key = 2;
         nodes[0] = MerkleLib.zeros(0);
-        nodes[1] = MerkleLib.hash(keccak256("leaf_1"), keccak256("leaf_2"));
+        nodes[1] = MerkleLib.hash(keccak256("leaf_1").asField(), keccak256("leaf_2").asField());
         leaf = MerkleLib.zeros(0);
 
         assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
@@ -147,11 +150,11 @@ contract MerkleLibTest is Test {
         // Reset first node to zero node.
         nodes[0] = MerkleLib.zeros(0);
         // Update sub-tree node.
-        nodes[1] = MerkleLib.hash(keccak256("leaf_1"), keccak256("leaf_2"));
+        nodes[1] = MerkleLib.hash(keccak256("leaf_1").asField(), keccak256("leaf_2").asField());
 
         // Insert another `leaf` into tree at position 2.
         key = 2;
-        leaf = keccak256("leaf_3");
+        leaf = keccak256("leaf_3").asField();
 
         // First hash will be with right zero node.
         root = MerkleLib.hash(leaf, MerkleLib.zeros(0));
@@ -168,9 +171,9 @@ contract MerkleLibTest is Test {
 
         // Prove equal `root` starting from `key = 1`.
         key = 1;
-        leaf = keccak256("leaf_2");
-        nodes[0] = keccak256("leaf_1");
-        nodes[1] = MerkleLib.hash(keccak256("leaf_3"), MerkleLib.zeros(0));
+        leaf = keccak256("leaf_2").asField();
+        nodes[0] = keccak256("leaf_1").asField();
+        nodes[1] = MerkleLib.hash(keccak256("leaf_3").asField(), MerkleLib.zeros(0));
 
         assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
     }
@@ -182,30 +185,30 @@ contract MerkleLibTest is Test {
 
         // Insert `leaf` into an empty tree at position 0.
         key = 0;
-        leaf = keccak256("leaf_1");
+        leaf = keccak256("leaf_1").asField();
 
         (root, nodes) = MerkleLib.appendLeaf(key, leaf, nodes);
 
         // Insert another `leaf` into tree at position 1.
         key = 1;
-        leaf = keccak256("leaf_2");
+        leaf = keccak256("leaf_2").asField();
 
         (root, nodes) = MerkleLib.appendLeaf(key, leaf, nodes);
 
         // Insert another `leaf` into tree at position 2.
         key = 2;
-        leaf = keccak256("leaf_3");
+        leaf = keccak256("leaf_3").asField();
 
         (root, nodes) = MerkleLib.appendLeaf(key, leaf, nodes);
 
         // Prove inclusion of "leaf_2" starting at `key = 1`.
         key = 1;
-        leaf = keccak256("leaf_2");
+        leaf = keccak256("leaf_2").asField();
 
         // Configure proof nodes.
         (, nodes) = MerkleLib.getEmptyTree();
-        nodes[0] = keccak256("leaf_1");
-        nodes[1] = MerkleLib.hash(keccak256("leaf_3"), MerkleLib.zeros(0));
+        nodes[0] = keccak256("leaf_1").asField();
+        nodes[1] = MerkleLib.hash(keccak256("leaf_3").asField(), MerkleLib.zeros(0));
 
         assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
     }

@@ -67,10 +67,10 @@ contract NoirTestBase is Test {
     function generateProof(
         address receiver,
         uint256 key,
-        bytes32 nullifier,
-        bytes32 secret,
-        bytes32[DEPTH] memory nodes,
-        bytes32 root,
+        uint256 nullifier,
+        uint256 secret,
+        uint256[DEPTH] memory nodes,
+        uint256 root,
         string memory proverFile
     ) internal returns (bytes memory proof) {
         // Bash script executes inside `CIRCUITS_DIR`.

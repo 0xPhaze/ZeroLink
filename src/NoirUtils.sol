@@ -14,17 +14,17 @@ library NoirUtils {
         return x;
     }
 
-    function toField(bytes32 x) internal pure returns (bytes32) {
+    function toField(bytes32 x) internal pure returns (uint256) {
         if (uint256(x) >= PRIME_FIELD) revert InvalidFieldElement();
 
-        return x;
+        return uint256(x);
     }
 
     function asField(uint256 x) internal pure returns (uint256) {
         return x % PRIME_FIELD;
     }
 
-    function asField(bytes32 x) internal pure returns (bytes32) {
-        return bytes32(uint256(x) % PRIME_FIELD);
+    function asField(bytes32 x) internal pure returns (uint256) {
+        return uint256(x) % PRIME_FIELD;
     }
 }
