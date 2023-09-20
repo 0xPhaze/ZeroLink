@@ -178,6 +178,24 @@ contract ZeroLinkTest is NoirTestBase {
         zerolink.withdraw(alice, nullifier, root, proof);
     }
 
+    /// Withdrawal fails with a stale root.
+    function test_withdraw_revert_InvalidRoot_stale() public {
+        setUpProofAlice();
+
+        vm.prank(alice);
+        zerolink.deposit{value: 1 ether}(leaf);
+
+        for (uint256 i; i < zerolink.NUM_ROOTS() + 1; i++) {
+            vm.prank(bob);
+            zerolink.deposit{value: 1 ether}(i);
+        }
+
+        // Alice's proof is not valid anymore due to a stale root.
+        vm.prank(alice);
+        vm.expectRevert(ZeroLink.InvalidRoot.selector);
+        zerolink.withdraw(alice, nullifier, root, proof);
+    }
+
     /// Can't withdraw with a valid proof but invalid root.
     function test_withdraw_revert_InvalidRoot() public {
         setUpProofAlice();
@@ -203,9 +221,9 @@ contract ZeroLinkTest is NoirTestBase {
         zerolink.withdraw(alice, nullifier, root, proof);
     }
 
-    /// The call to `verifyProof` cannot be front-run.
-    function test_verify_revert_PROOF_FAILURE_invalidSender(address sender) public {
-        vm.assume(sender != alice);
+    /// The call to `withdraw` cannot be front-run with a different `receiver`.
+    function test_withdraw_revert_PROOF_FAILURE_invalid_receiver(address receiver) public {
+        vm.assume(receiver != alice);
 
         // Alice deposits.
         vm.prank(alice);
@@ -214,11 +232,13 @@ contract ZeroLinkTest is NoirTestBase {
         // Alice generates withdrawal proof,
         setUpProofAlice();
 
-        // Alice is front-run by `sender` who uses the same data.
-        vm.prank(sender);
+        // Alice is front-run by `receiver` who uses the same data.
+        vm.prank(receiver);
         vm.expectRevert(BaseUltraVerifier.PROOF_FAILURE.selector);
-        zerolink.withdraw(sender, nullifier, root, proof);
+        zerolink.withdraw(receiver, nullifier, root, proof);
     }
+
+    /* ------------- verify ------------- */
 
     /// Cannot modify `nullifier` in proof.
     function test_verify_revert_PROOF_FAILURE_invalid_nullifier(uint256 nullifier_) public {
@@ -245,7 +265,7 @@ contract ZeroLinkTest is NoirTestBase {
     }
 
     /// Cannot modify `proof`.
-    function test_verify_revert_invalidProof(bytes calldata proof_) public {
+    function test_verify_revert_PROOF_FAILURE_invalid_proof(bytes calldata proof_) public {
         vm.assume(keccak256(proof) != keccak256(proof_));
 
         setUpProofAlice();
@@ -255,9 +275,12 @@ contract ZeroLinkTest is NoirTestBase {
     }
 
     /// Cannot modify any proof inputs.
-    function test_verify_revert_invalidInputs(address sender, bytes calldata proof_, uint256 nullifier_, uint256 root_)
-        public
-    {
+    function test_verify_revert_PROOF_FAILURE_invalid_inputs(
+        address sender,
+        bytes calldata proof_,
+        uint256 nullifier_,
+        uint256 root_
+    ) public {
         bool validProof;
         validProof = validProof && root == root_;
         validProof = validProof && sender == alice;
