@@ -160,7 +160,7 @@ contract ZeroLinkTest is NoirTestBase {
         zerolink.withdraw(alice, nullifier, root, proof);
 
         // Receiver gets funds back.
-        assertEq(alice.balance, 1 ether);
+        assertEq(alice.balance, 100 ether);
     }
 
     /// Can successfully withdraw with old root.
