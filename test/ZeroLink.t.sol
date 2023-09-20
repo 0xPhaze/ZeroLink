@@ -170,8 +170,10 @@ contract ZeroLinkTest is NoirTestBase {
         vm.prank(alice);
         zerolink.deposit{value: 1 ether}(leaf);
 
-        vm.prank(bob);
-        zerolink.deposit{value: 1 ether}(0x1234);
+        for (uint256 i; i < zerolink.NUM_OLD_ROOTS(); i++) {
+            vm.prank(bob);
+            zerolink.deposit{value: 1 ether}(i);
+        }
 
         // Alice's proof is still valid.
         vm.prank(alice);
@@ -185,7 +187,7 @@ contract ZeroLinkTest is NoirTestBase {
         vm.prank(alice);
         zerolink.deposit{value: 1 ether}(leaf);
 
-        for (uint256 i; i < zerolink.NUM_ROOTS() + 1; i++) {
+        for (uint256 i; i < zerolink.NUM_OLD_ROOTS() + 1; i++) {
             vm.prank(bob);
             zerolink.deposit{value: 1 ether}(i);
         }

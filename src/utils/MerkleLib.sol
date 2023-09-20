@@ -6,6 +6,7 @@ import {PoseidonT2, PoseidonT3} from "./Poseidon.sol";
 uint256 constant DEPTH = 4;
 
 library MerkleLib {
+    error InvalidKey();
     error InvalidZerosLevel();
 
     /// @notice Hashes two values `left` and `right`.
@@ -25,6 +26,9 @@ library MerkleLib {
     ///      part of the proof, these can be set to arbitrary values.
     ///      `key` is a malleable parameter if not all bits are read.
     function computeRoot(uint256 key, uint256 leaf, uint256[DEPTH] memory nodes) internal pure returns (uint256 root) {
+        // Maximum number of leaves committed to fixed size merkle tree.
+        if (key >> DEPTH != 0) revert InvalidKey();
+
         // Start with the `leaf` node.
         root = leaf;
 
@@ -50,6 +54,9 @@ library MerkleLib {
         pure
         returns (uint256 root, uint256[DEPTH] memory newNodes)
     {
+        // Maximum number of leaves committed to fixed size merkle tree.
+        if (key >> DEPTH != 0) revert InvalidKey();
+
         // Start with the `leaf` node.
         uint256 node = leaf;
 
