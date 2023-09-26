@@ -212,4 +212,202 @@ contract MerkleLibTest is Test {
 
         assertEq(root, MerkleLib.computeRoot(key, leaf, nodes));
     }
+
+    /// Test computing and updating merkle root.
+    function test_computeRoot_with_leaves() public {
+        uint256[] memory leaves = new uint256[](0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        leaves = new uint256[](1);
+        leaves[0] = MerkleLib.zeros(0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        leaves = new uint256[](2);
+        leaves[0] = MerkleLib.zeros(0);
+        leaves[1] = MerkleLib.zeros(0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        leaves = new uint256[](3);
+        leaves[0] = MerkleLib.zeros(0);
+        leaves[1] = MerkleLib.zeros(0);
+        leaves[2] = MerkleLib.zeros(0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        // leaves: 0x1  -    -    -    -    -    -    -
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x1, nodes);
+
+        leaves = new uint256[](1);
+        leaves[0] = 0x1;
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        // Adding extra zero leaves should not
+        // change the computed root.
+        leaves = new uint256[](2);
+        leaves[0] = 0x1;
+        leaves[1] = MerkleLib.zeros(0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        leaves = new uint256[](3);
+        leaves[0] = 0x1;
+        leaves[1] = MerkleLib.zeros(0);
+        leaves[2] = MerkleLib.zeros(0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        // leaves: 0x1  0x2  -    -    -    -    -    -
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x2, nodes);
+
+        leaves = new uint256[](2);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        leaves = new uint256[](3);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = MerkleLib.zeros(0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        leaves = new uint256[](4);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = MerkleLib.zeros(0);
+        leaves[3] = MerkleLib.zeros(0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        // leaves: 0x1  0x2  0x3  -    -    -    -    -
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x3, nodes);
+
+        leaves = new uint256[](3);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = 0x3;
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        leaves = new uint256[](4);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = 0x3;
+        leaves[3] = MerkleLib.zeros(0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        leaves = new uint256[](5);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = 0x3;
+        leaves[3] = MerkleLib.zeros(0);
+        leaves[4] = MerkleLib.zeros(0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        // leaves: 0x1  0x2  0x3  0x4  -    -    -    -
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x4, nodes);
+
+        leaves = new uint256[](4);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = 0x3;
+        leaves[3] = 0x4;
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        leaves = new uint256[](5);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = 0x3;
+        leaves[3] = 0x4;
+        leaves[4] = MerkleLib.zeros(0);
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        // leaves: 0x1  0x2  0x3  0x4  0x5  -    -    -
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x5, nodes);
+
+        leaves = new uint256[](5);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = 0x3;
+        leaves[3] = 0x4;
+        leaves[4] = 0x5;
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        // leaves: 0x1  0x2  0x3  0x4  0x5  0x6  -    -
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x6, nodes);
+
+        leaves = new uint256[](6);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = 0x3;
+        leaves[3] = 0x4;
+        leaves[4] = 0x5;
+        leaves[5] = 0x6;
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        // leaves: 0x1  0x2  0x3  0x4  0x5  0x6  0x8  -
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x7, nodes);
+
+        leaves = new uint256[](7);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = 0x3;
+        leaves[3] = 0x4;
+        leaves[4] = 0x5;
+        leaves[5] = 0x6;
+        leaves[6] = 0x7;
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+
+        // leaves: 0x1  0x2  0x3  0x4  0x5  0x6  0x8  0x9
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x8, nodes);
+
+        leaves = new uint256[](8);
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = 0x3;
+        leaves[3] = 0x4;
+        leaves[4] = 0x5;
+        leaves[5] = 0x6;
+        leaves[6] = 0x7;
+        leaves[7] = 0x8;
+
+        assertEq(MerkleLib.computeRoot(leaves), root);
+    }
+
+    /// Test computing and updating merkle root.
+    function test_getProof() public {
+        uint256[] memory leaves = new uint256[](5);
+
+        leaves[0] = 0x1;
+        leaves[1] = 0x2;
+        leaves[2] = 0x3;
+        leaves[3] = 0x4;
+        leaves[4] = 0x5;
+
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x1, nodes);
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x2, nodes);
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x3, nodes);
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x4, nodes);
+        (root, nodes) = MerkleLib.appendLeaf(key++, 0x5, nodes);
+
+        for (uint256 i; i < 5; i++) {
+            uint256 proofKey = i;
+            uint256 proofLeaf = leaves[i];
+            uint256[DEPTH] memory proofNodes = MerkleLib.getProof(proofKey, leaves);
+
+            assertEq(MerkleLib.computeRoot(proofKey, proofLeaf, proofNodes), root);
+        }
+    }
 }

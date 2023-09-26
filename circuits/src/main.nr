@@ -55,8 +55,7 @@ fn main(
   assert(compute_merkle_root(key, leaf, nodes) == root);
 
   // Tie `receiver` into proof.
-  // TODO: Is this safe enough?
-  assert(receiver != 0);
+  assert(receiver + leaf + nullifier != 0);
 }
 
 

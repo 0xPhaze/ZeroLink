@@ -95,7 +95,7 @@ contract NoirTestBase is Test {
         // Generate proof data.
         proof = vm.ffi(script);
 
-        require(proof.length != 0, "Invalid proof received");
+        require(proof.length != 0, "Invalid proof generated");
 
         // Don't cleanup main `Prover.toml`.
         if (keccak256(bytes(proverFile)) == keccak256(bytes(PROVER_FILE))) return proof;

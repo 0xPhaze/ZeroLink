@@ -14,10 +14,10 @@ contract ZeroLink is UltraVerifier {
     error LeafNonexistent();
     error InvalidReceiver();
 
-    /// @notice Event emitted when proving that `leaf` belongs to
+    /// @notice Event emitted when proving that `nullifier` belongs to
     ///         a custom merkle tree with root `aspRoot` given by
     ///         an association set provider.
-    event AssociationProven(uint256 indexed leaf, uint256 indexed aspRoot);
+    event AssociationProven(uint256 indexed nullifier, uint256 indexed aspRoot);
 
     /// @notice Number of old merkle tree roots stored.
     uint256 public constant NUM_OLD_ROOTS = 10;
@@ -100,19 +100,17 @@ contract ZeroLink is UltraVerifier {
 
     /// @notice Prove an association to a set of leaves (deposits) via
     ///         a zero knowledge proof.
-    function proveAssociation(uint256 leaf, uint256 aspRoot, address receiver, uint256 nullifier, bytes calldata proof)
-        public
-    {
+    function proveAssociation(address receiver, uint256 nullifier, uint256 aspRoot, bytes calldata proof) public {
         // We use `receiver == address(0)` to prove an association.
         if (receiver != address(0)) revert InvalidReceiver();
 
         // Verify the zero knowledge proof.
-        // TODO: We do not need to publicly reveal `nullifier` at this stage.
+        // TODO: Do we need to publicly reveal `nullifier` at this stage?
         _verifyProof(receiver, nullifier, aspRoot, proof);
 
         // Emit event.
         // Note: This does NOT guarantee existence of the leaf.
-        emit AssociationProven(leaf, aspRoot);
+        emit AssociationProven(nullifier, aspRoot);
     }
 
     /// @notice Checks whether `root_` is one of the last `NUM_OLD_ROOTS` stored roots.
