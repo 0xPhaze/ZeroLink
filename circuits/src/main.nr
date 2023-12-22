@@ -14,26 +14,19 @@ fn hash_2(left: Field, right: Field) -> Field {
 /// Compute the merkle tree root
 fn compute_merkle_root(key: [u1; DEPTH], leaf: Field, nodes: [Field; DEPTH]) -> Field {
     // Start with the `leaf` node.
-    let mut root: Field = leaf;
+    let mut node: Field = leaf;
 
     for i in 0..DEPTH {
-        let n = nodes[i];
-
-        // Hash current node `root` with left provided node `nodes[i]`.
-        let mut left = n;
-        let mut right = root;
-
-        // Or hash it with right `nodes[i]` to the right,
-        // depending on `key`s i-th bit.
-        if (key[i] == 0) {
-            left = root;
-            right = n;
-        }
-
-        root = hash_2(left, right);
+        // Hash current node `node` with provided node `nodes[i]`
+        // to left or right with `nodes[i]` depending on `key`s i-th bit.
+        node = if (key[i] == 0) {
+            hash_2(node, nodes[i])
+        } else {
+            hash_2(nodes[i], node)
+        };
     }
 
-    root
+    node
 }
 
 /// Main circuit.
