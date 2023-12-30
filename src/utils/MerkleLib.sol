@@ -51,7 +51,6 @@ library MerkleLib {
     ///         or with `nodes[i]` to if the current node is to the right.
     /// @dev Does not read and validate all provided `nodes`. If these are not
     ///      part of the proof, these can be set to arbitrary values.
-    ///      `key` is a malleable parameter if not all bits are read.
     //       Note: These nodes are used for updating the subsequent nodes and root
     //       following the next deposit.
     //

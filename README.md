@@ -47,7 +47,7 @@ curl -L https://raw.githubusercontent.com/noir-lang/noirup/main/install | bash
 noirup -n
 ```
 
-## Noir Circuit Compilation
+## Noir Circuits
 
 Navigate to the [circuits](circuits) directory.
 
@@ -111,4 +111,5 @@ Run the tests in [ZeroLink.t.sol](test/ZeroLink.t.sol).
 forge test
 ```
 
-Note that the tests contain hardcoded proofs that need to be updated in the case that the verification key ([plonk_vk.sol](circuits/contract/ZeroLink/plonk_vk.sol)) changes.
+> [!IMPORTANT]  
+> The tests in [ZeroLink.t.sol](test/ZeroLink.t.sol) contain hardcoded proofs (for efficiency) that need to be updated in the case that the verification key ([plonk_vk.sol](circuits/contract/ZeroLink/plonk_vk.sol)) changes.

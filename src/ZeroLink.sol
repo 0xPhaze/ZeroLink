@@ -91,22 +91,21 @@ contract ZeroLink is UltraVerifier {
         if (!_isValidRoot(root_)) revert InvalidRoot();
 
         // Verify the zero knowledge proof.
-        _verifyProof(receiver, nullifier, root_, proof);
+        verifyProof(receiver, nullifier, root_, proof);
 
         // Refund caller.
         (bool success,) = receiver.call{value: DEPOSIT_AMOUNT}("");
         if (!success) revert TransferFailed();
     }
 
-    /// @notice Prove an association to a set of leaves (deposits) via
-    ///         a zero knowledge proof.
-    function proveAssociation(address receiver, uint256 nullifier, uint256 aspRoot, bytes calldata proof) public {
+    /// @notice Prove an association of a withdrawal (tied to `nullifier`)
+    ///         to a set of deposit leaves via a zero knowledge proof.
+    function proveAssociation(uint256 nullifier, uint256 aspRoot, bytes calldata proof) public {
         // We use `receiver == address(0)` to prove an association.
-        if (receiver != address(0)) revert InvalidReceiver();
+        address receiver = address(0);
 
         // Verify the zero knowledge proof.
-        // TODO: Do we need to publicly reveal `nullifier` at this stage?
-        _verifyProof(receiver, nullifier, aspRoot, proof);
+        verifyProof(receiver, nullifier, aspRoot, proof);
 
         // Emit event.
         // Note: This does NOT guarantee existence of the leaf.
@@ -137,7 +136,7 @@ contract ZeroLink is UltraVerifier {
     ///           * `nullifier` is derived correctly: `hash(secret + 2)`
     ///           * The leaf is contained in a merkle tree with root `root`
     ///           * The proof is generated for `receiver`
-    function _verifyProof(address receiver, uint256 nullifier, uint256 root_, bytes calldata proof) internal view {
+    function verifyProof(address receiver, uint256 nullifier, uint256 root_, bytes calldata proof) public view {
         // Set up public inputs for `proof` verification.
         // The circuit in Noir expects 3 public inputs.
         bytes32[] memory publicInputs = new bytes32[](3);
