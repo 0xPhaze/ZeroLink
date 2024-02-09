@@ -214,6 +214,29 @@ contract MerkleLibTest is Test {
     }
 
     /// Test computing and updating merkle root.
+    function test_computeRoot_vs_appendLeaf() public {
+        // Start with an empty tree.
+        (root, nodes) = MerkleLib.getEmptyTree();
+
+        uint256[] memory leaves = new uint256[](2 ** DEPTH);
+
+        for (uint256 k; k < 2 ** DEPTH; ++k) {
+            leaf = keccak256(abi.encode(k)).asField();
+
+            (root, nodes) = MerkleLib.appendLeaf(k, leaf, nodes);
+
+            // leaves.length = k + 1;
+            assembly {
+                mstore(leaves, add(k, 1))
+            }
+
+            leaves[k] = leaf;
+
+            assertEq(MerkleLib.computeRoot(leaves), root);
+        }
+    }
+
+    /// Test computing and updating merkle root.
     function test_computeRoot_with_leaves() public {
         uint256[] memory leaves = new uint256[](0);
 
