@@ -37,8 +37,8 @@ contract ZeroLink is UltraVerifier {
     /// @notice Array of old roots.
     uint256[NUM_OLD_ROOTS] public roots;
 
-    /// @notice Keep track of already used nullifiers.
-    mapping(uint256 nullifier => bool used) public nullifierUsed;
+    /// @notice Keep track of already spent nullifiers.
+    mapping(uint256 nullifier => bool spent) public nullifierSpent;
     /// @notice Keep track of already committed leaves.
     mapping(uint256 leaf => bool committed) public leafCommitted;
 
@@ -82,10 +82,10 @@ contract ZeroLink is UltraVerifier {
         if (receiver == address(0)) revert InvalidReceiver();
 
         // Check `nullifier` to prevent replay.
-        if (nullifierUsed[nullifier]) revert NullifierUsed();
+        if (nullifierSpent[nullifier]) revert NullifierUsed();
 
-        // Mark `nullifier` as used.
-        nullifierUsed[nullifier] = true;
+        // Mark `nullifier` as spent.
+        nullifierSpent[nullifier] = true;
 
         // Withdrawer's proof must relate to a recently committed root.
         if (!_isValidRoot(root_)) revert InvalidRoot();
