@@ -30,7 +30,7 @@ contract ZeroLink is UltraVerifier {
     uint256 public root;
     /// @notice Internal nodes used for updating the merkle root.
     /// @dev    These can not be used for proving a current deposit.
-    uint256[DEPTH] public nodes;
+    uint256[DEPTH] public proofNodes;
 
     /// @notice Running index for array of old roots.
     uint256 public rootsIndex;
@@ -44,7 +44,7 @@ contract ZeroLink is UltraVerifier {
 
     constructor() {
         // Initialize inner nodes of empty tree.
-        (root, nodes) = MerkleLib.getEmptyTree();
+        (root, proofNodes) = MerkleLib.getEmptyTree();
     }
 
     /// @notice Create a deposit by committing a leaf node to an
@@ -70,7 +70,7 @@ contract ZeroLink is UltraVerifier {
             // Update merkle root and internal nodes inserting `leaf` at index `key`.
             // Increment the merkle tree index `key`.
             // Throws if `leaf` or any of `nodes` is not a field element.
-            (root, nodes) = MerkleLib.appendLeaf(key++, leaf, nodes);
+            (root, proofNodes) = MerkleLib.appendLeaf(key++, leaf, proofNodes);
         }
     }
 
