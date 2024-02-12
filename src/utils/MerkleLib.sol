@@ -27,7 +27,6 @@ library MerkleLib {
     ///         the provided nodes to either left or right, depending on `key`.
     /// @dev Does not read and validate all provided `nodes`. If these are not
     ///      part of the proof, these can be set to arbitrary values.
-    ///      `key` is a malleable parameter if not all bits are read.
     function computeRoot(uint256 key, uint256 leaf, uint256[DEPTH] memory nodes) internal pure returns (uint256 root) {
         unchecked {
             // Maximum number of leaves committed to fixed size merkle tree.
@@ -65,6 +64,8 @@ library MerkleLib {
             // Maximum number of leaves committed to fixed size merkle tree.
             if (key >> DEPTH != 0) revert InvalidKey();
 
+            newNodes = nodes;
+
             // Start with the `leaf` node.
             uint256 node = leaf;
 
@@ -78,10 +79,6 @@ library MerkleLib {
                     newNodes[i] = node;
                     node = hash(node, zeros(i));
                 } else {
-                    // Store newly computed internal node `node` if we require it
-                    // at the next update (for the next key at the same level),
-                    // otherwise we will still require the same `nodes[i]`.
-                    newNodes[i] = (key + 1 >> i) & 1 == 0 ? node : nodes[i];
                     node = hash(nodes[i], node);
                 }
             }
@@ -195,6 +192,7 @@ library MerkleLib {
         if (level == 2) return 0x18f43331537ee2af2e3d758d50f72106467c6eea50371dd528d57eb2b856d238;
         if (level == 3) return 0x07f9d837cb17b0d36320ffe93ba52345f1b728571a568265caac97559dbc952a;
         if (level == 4) return 0x2b94cf5e8746b3f5c9631f4c5df32907a699c58c94b2ad4d7b5cec1639183f55;
+        if (level == 5) return 0x2dee93c5a666459646ea7d22cca9e1bcfed71e6951b953611d11dda32ea09d78;
         revert InvalidZerosLevel();
     }
 }
